@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source ../.env
 
 # Description:
 #  This script reads a Markdown table from the specified file and looks for pairs of rows:
