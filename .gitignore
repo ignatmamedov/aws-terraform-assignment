@@ -4,6 +4,8 @@
 *.iws
 *.jar
 *.sw?
+*.sqlite
+.env
 *~
 .#*
 .*.md.html
