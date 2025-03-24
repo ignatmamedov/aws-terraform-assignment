@@ -15,7 +15,8 @@ backend_job:
     policy: pull-push
   before_script:
     - cd backend
-    - apt-get update && apt-get install -y sqlite3
+    - sudo mkdir -p /var/lib/apt/lists/partial
+    - sudo apt-get update && sudo apt-get install -y sqlite3
     - echo "Installing backend dependencies with Composer..."
     - composer install --no-interaction --prefer-dist --optimize-autoloader
     - php artisan migrate --force
