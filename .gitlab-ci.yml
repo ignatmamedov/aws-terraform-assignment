@@ -15,6 +15,9 @@ backend_job:
     policy: pull-push
   before_script:
     - cd backend
+    - mkdir -p database
+    - touch database/database.sqlite
+    - php artisan migrate --force
   script:
     - echo "Installing backend dependencies..."
     - composer install --no-interaction --prefer-dist --optimize-autoloader
