@@ -15,6 +15,7 @@ backend_job:
     policy: pull-push
   before_script:
     - cd backend
+    - apt-get update && apt-get install -y sqlite3
     - echo "Installing backend dependencies with Composer..."
     - composer install --no-interaction --prefer-dist --optimize-autoloader
     - php artisan migrate --force
@@ -23,7 +24,7 @@ backend_job:
     # if artisan not avaibale, run tests manually
     - if [ -f artisan ]; then php artisan test; else vendor/bin/phpunit; fi
   artifacts:
-    when: always
+    when: on_success
     expire_in: 1 day
     paths:
       - backend/storage/logs/*.log
@@ -47,7 +48,7 @@ frontend_job:
     - echo "Building frontend..."
     - npm run build
   artifacts:
-    when: always
+    when: on_success
     expire_in: 1 week
     paths:
       - frontend/dist/
