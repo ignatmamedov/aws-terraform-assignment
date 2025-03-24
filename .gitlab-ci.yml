@@ -17,10 +17,6 @@ backend_job:
     - cd backend
     - echo "Installing backend dependencies with Composer..."
     - composer install --no-interaction --prefer-dist --optimize-autoloader
-    - echo "Setting up SQLite database..."
-    - mkdir -p database
-    - touch database/database.sqlite
-    - echo "Running migrations"
     - php artisan migrate --force
   script:
     - echo "Running tests..."
