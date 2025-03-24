@@ -1,12 +1,23 @@
 stages:
   - build_and_test
 
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
+      when: always
+    - when: never
+
+
 backend_job:
   stage: build_and_test
   # Provides PHP 8.2 and Composer 
   image: cimg/php:8.2  
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
   cache:
     key: backend-deps
     paths:
@@ -27,8 +38,6 @@ backend_job:
 frontend_job:
   stage: build_and_test
   image: node:latest
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
   cache:
     key: frontned-deps
     paths:
