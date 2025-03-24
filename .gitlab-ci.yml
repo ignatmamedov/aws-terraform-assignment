@@ -1,0 +1,57 @@
+stages:
+  - build_and_test
+
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
+      when: always
+    - when: never
+
+
+backend_job:
+  stage: build_and_test
+  # Provides PHP 8.2 and Composer 
+  image: cimg/php:8.2  
+  cache:
+    key: backend-deps
+    paths:
+      - backend/vendor/
+    policy: pull-push
+  before_script:
+    - cd backend
+    - sudo mkdir -p /var/lib/apt/lists/partial
+    - sudo apt-get update && sudo apt-get install -y sqlite3
+    - echo "Installing backend dependencies with Composer..."
+    - composer install --no-interaction --prefer-dist --optimize-autoloader
+    - php artisan migrate --force
+  script:
+    - echo "Running tests..."
+    # if artisan not avaibale, run tests manually
+    - if [ -f artisan ]; then php artisan test; else vendor/bin/phpunit; fi
+    
+frontend_job:
+  stage: build_and_test
+  image: node:latest
+  cache:
+    key: frontned-deps
+    paths:
+      - frontend/node_modules/
+    policy: pull-push
+  before_script:
+    - cd frontend
+  script:
+    - echo "Installing frontend dependencies..."
+    - npm install
+    - echo "Building frontend..."
+    - npm run build
+  artifacts:
+    when: on_success
+    expire_in: 1 week
+    paths:
+      - frontend/dist/
