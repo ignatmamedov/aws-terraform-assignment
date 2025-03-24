@@ -1,1 +1,52 @@
-#
+stages:
+  - build_and_test
+
+backend_job:
+  stage: build_and_test
+  # Provides PHP 8.2 and Composer 
+  image: cimg/php:8.2  
+  rules:
+    - changes:
+        - backend/**/*  
+  cache:
+    key: backend-deps
+    paths:
+      - backend/vendor/
+    policy: pull-push
+  before_script:
+    - cd backend
+  script:
+    - echo "Installing backend dependencies..."
+    - composer install --no-interaction --prefer-dist --optimize-autoloader
+    - echo "Running tests..."
+    # if artisan is not available, run tests manually
+    - if [ -f artisan ]; then php artisan test; else vendor/bin/phpunit; fi
+  artifacts:
+    when: always
+    expire_in: 1 day
+    paths:
+      - backend/storage/logs/*.log
+
+frontend_job:
+  stage: build_and_test
+  image: node:latest
+  rules:
+    - changes:
+        - frontend/**/*  
+  cache:
+    key: frontned-deps
+    paths:
+      - frontend/node_modules/
+    policy: pull-push
+  before_script:
+    - cd frontend
+  script:
+    - echo "Installing frontend dependencies..."
+    - npm install
+    - echo "Building frontend..."
+    - npm run build
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - frontend/dist/
