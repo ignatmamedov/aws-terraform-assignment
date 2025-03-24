@@ -6,8 +6,7 @@ backend_job:
   # Provides PHP 8.2 and Composer 
   image: cimg/php:8.2  
   rules:
-    - changes:
-        - backend/**/*  
+    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
   cache:
     key: backend-deps
     paths:
@@ -29,8 +28,7 @@ frontend_job:
   stage: build_and_test
   image: node:latest
   rules:
-    - changes:
-        - frontend/**/*  
+    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
   cache:
     key: frontned-deps
     paths:
