@@ -15,14 +15,16 @@ backend_job:
     policy: pull-push
   before_script:
     - cd backend
+    - echo "Installing backend dependencies with Composer..."
+    - composer install --no-interaction --prefer-dist --optimize-autoloader
+    - echo "Setting up SQLite database..."
     - mkdir -p database
     - touch database/database.sqlite
+    - echo "Running migrations"
     - php artisan migrate --force
   script:
-    - echo "Installing backend dependencies..."
-    - composer install --no-interaction --prefer-dist --optimize-autoloader
     - echo "Running tests..."
-    # if artisan is not available, run tests manually
+    # if artisan not avaibale, run tests manually
     - if [ -f artisan ]; then php artisan test; else vendor/bin/phpunit; fi
   artifacts:
     when: always
