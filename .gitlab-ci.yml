@@ -28,7 +28,7 @@ backend_job:
     when: on_success
     expire_in: 1 day
     paths:
-      - backend/storage/logs/*.log
+      - backend/storage/logs/laravel.log
 
 frontend_job:
   stage: build_and_test
