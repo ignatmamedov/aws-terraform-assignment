@@ -10,7 +10,7 @@ source ../.env
 # Environment Variables:
 #  - GOALS_ENDPOINT: The URL to POST data to (defaults to "http://localhost:8000/api/goals").
 
-readonly DEFAULT_ENDPOINT="http://localhost:8000/api/goals"
+readonly DEFAULT_ENDPOINT="http://localhost:8080/api/goals"
 readonly ENDPOINT="${GOALS_ENDPOINT:-$DEFAULT_ENDPOINT}"
 readonly TARGET_KEY="target"
 readonly GOAL_KEY="goal"
@@ -169,4 +169,4 @@ while IFS= read -r rawValue_line; do
 done < "$DATA_FILE"
 
 echo
-echo "Finished processing. Goals posted: $goal_count."
+echo "Finished processing. Goals processed: $goal_count."
