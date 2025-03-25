@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-source ../.env
-
 # Description:
 #  This script reads a Markdown table from the specified file and looks for pairs of rows:
 #    1) A row with key = "target" and a numeric percentage (like "45%").
