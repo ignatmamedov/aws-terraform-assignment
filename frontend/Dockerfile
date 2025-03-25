@@ -21,6 +21,8 @@ FROM nginx:alpine
 
 # Copy built frontend assets from 'build' stage to Nginx root
 COPY --from=build /app/dist /usr/share/nginx/html
+COPY default.conf /etc/nginx/conf.d/default.conf
+
 
 # Expose port 80 (inside container). We'll map host port 5173 in docker-compose.
 EXPOSE 80
