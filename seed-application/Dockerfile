@@ -9,7 +9,6 @@ RUN apk add --no-cache curl bash
 
 WORKDIR /seed-application
 
-
 # Copy the seeding script and data file into the image
 COPY ${SEED_SCRIPT} .
 COPY data.md .
