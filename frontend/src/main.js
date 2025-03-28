@@ -11,6 +11,8 @@ let percentage = 0;
 let goals = [];
 let animations = [];
 
+const backendUrl = import.meta.env.VITE_BACKEND_URL
+
 document.addEventListener("DOMContentLoaded", async () => {
   if (await loadFromAPI()) {
     // Add new elements to DOM
@@ -60,7 +62,7 @@ async function loadFromAPI() {
   let success = true;
 
   try {
-    const response = await fetch("http://127.0.0.1:8000/api/percentage");
+    const response = await fetch(`${backendUrl}/api/percentage`);
     percentage = (await response.json()).percentage;
   } catch (error) {
     console.error("Error fetching percentage data:", error);
@@ -68,7 +70,7 @@ async function loadFromAPI() {
   }
 
   try {
-    const response = await fetch("http://127.0.0.1:8000/api/goals");
+    const response = await fetch(`${backendUrl}/api/goals`);
     goals = await response.json();
   } catch (error) {
     console.error("Error fetching goals data:", error);

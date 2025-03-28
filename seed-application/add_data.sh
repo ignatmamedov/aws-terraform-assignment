@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-source ../.env
-
 # Description:
 #  This script reads a Markdown table from the specified file and looks for pairs of rows:
 #    1) A row with key = "target" and a numeric percentage (like "45%").
@@ -8,31 +6,47 @@ source ../.env
 #  It builds a JSON payload for each valid pair and POSTs it to the configured endpoint.
 #
 # Environment Variables:
-#  - GOALS_ENDPOINT: The URL to POST data to (defaults to "http://localhost:8000/api/goals").
+#  - GOALS_ENDPOINT: The URL to POST data to (defaults to "http://localhost:8080/api/goals").
 
-readonly DEFAULT_ENDPOINT="http://localhost:8000/api/goals"
+# Attempt to load ../.env, but ignore if missing
+source ../.env 2>/dev/null || true
+
+readonly DEFAULT_ENDPOINT="http://localhost:8080/api/goals"
 readonly ENDPOINT="${GOALS_ENDPOINT:-$DEFAULT_ENDPOINT}"
+
 readonly TARGET_KEY="target"
 readonly GOAL_KEY="goal"
 readonly HEADER_KEY="Key"
-# Regex to match the separator row in the Markdown table. @Credits to ChatGPT
+# Regex to match the separator row in the Markdown table (like "| --- | --- |").
 readonly SEPARATOR_REGEX='^[[:space:]]*\|[-[:space:]]+\|'
 
-# Trim whitespace.
-# @Credits to ChatGPT for regex
+################################################################################
+# Trim leading and trailing whitespace.
 trim() {
   sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
 }
 
-# Validate that the percentage has the form "NN%" with NN numeric.
-# Returns the numeric portion or an empty string if invalid.
-# Args:
-#   $1 = raw percentage value (e.g "50%")
+################################################################################
+# Escape backslashes and double quotes so that strings won't break JSON syntax.
+escape_json_string() {
+  local s="$1"
+  # Escape backslashes
+  s="${s//\\/\\\\}"
+  # Escape double quotes
+  s="${s//\"/\\\"}"
+  # (Optional) Escape other control chars if needed
+  echo "$s"
+}
+
+################################################################################
+# Validate that the percentage has the form "NN%" with NN numeric,
+# returning just the numeric portion (e.g. 45), or empty string if invalid.
+#   Arg 1: raw percentage value (e.g. "50%")
 validate_percentage() {
   local rawValue="$1"
   local numValue
 
-  # Remove % sign and any extra whitespace, @Credits to ChatGPT
+  # Remove % sign and any extra whitespace
   numValue=$(echo "$rawValue" | sed 's/%//g' | xargs)
   if [[ "$numValue" =~ ^[0-9]+$ ]]; then
     echo "$numValue"
@@ -41,18 +55,16 @@ validate_percentage() {
   fi
 }
 
-# Send a JSON payload to the endpoint.
-# Args:
-#   $1 = JSON payload
+################################################################################
+# POST a JSON payload to the endpoint.
+#   Arg 1: JSON payload string
 post_goal() {
   local payload="$1"
-
-  # Write response body to a temp file;
   local tmpfile
-  # capture HTTP code in $response_code
-  local response_code
   tmpfile=$(mktemp)
 
+  # Capture the HTTP status code
+  local response_code
   response_code=$(curl -s -o "$tmpfile" -w "%{http_code}" \
                   -X POST "$ENDPOINT" \
                   -H "Content-Type: application/json" \
@@ -70,20 +82,23 @@ post_goal() {
   fi
 }
 
-# Check usage
-# if less than 1 argument is provided, print usage and exit
-if [ "$#" -lt 1 ]; then
+################################################################################
+# Main script logic
+################################################################################
+
+if [[ $# -lt 1 ]]; then
   echo "Usage: $0 <data_file>"
   exit 1
 fi
 
-# Check provided file for existence and readability
 DATA_FILE="$1"
-if [ ! -f "$DATA_FILE" ]; then
+
+# Check file existence and readability
+if [[ ! -f "$DATA_FILE" ]]; then
   echo "Error: File '$DATA_FILE' does not exist."
   exit 1
 fi
-if [ ! -r "$DATA_FILE" ]; then
+if [[ ! -r "$DATA_FILE" ]]; then
   echo "Error: File '$DATA_FILE' is not readable."
   exit 1
 fi
@@ -92,81 +107,77 @@ echo "Using endpoint: $ENDPOINT"
 echo "Reading data from: $DATA_FILE"
 echo
 
-# holds a valid percentage if we just read a "target" row
 current_target_percentage=""
 line_number=0
 goal_count=0
 
-# Read file line-by-line
-while IFS= read -r rawValue_line; do
+# Read the file line by line
+while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
   (( line_number++ ))
-  # Trim whitespace for each line
-  rawValue_line="$(echo "$rawValue_line" | trim)"
+
+  # Trim away leading/trailing whitespace
+  raw_line="$(echo "$raw_line" | trim)"
 
   # Skip empty lines
-  if [[ -z "$rawValue_line" ]]; then
+  if [[ -z "$raw_line" ]]; then
     continue
   fi
 
-  # Skip lines not starting with '|'
-  if [[ ! "$rawValue_line" =~ ^\| ]]; then
+  # Skip lines that do not start with '|'
+  if [[ ! "$raw_line" =~ ^\| ]]; then
     continue
   fi
 
-  # Skip header row (key / value)  or separator row (----)
-  if echo "$rawValue_line" | grep -qi "$HEADER_KEY"; then
+  # Skip header row (has "Key") or separator row (like "| --- |")
+  if echo "$raw_line" | grep -qi "$HEADER_KEY"; then
     continue
   fi
-  if [[ "$rawValue_line" =~ $SEPARATOR_REGEX ]]; then
+  if [[ "$raw_line" =~ $SEPARATOR_REGEX ]]; then
     continue
   fi
 
-  # Format: | key | value (something) |
-  # We'll parse by splitting on '|'.
-  # The -r option prevents backslashes from being interpreted as escape characters
-  # and the -a option assigns the split tokens to the array parts. @credits to chatGPT
-  IFS='|' read -ra parts <<< "$rawValue_line"
-  # parts[0] is empty (because line starts with '|')
-  # parts[1] => key
-  # parts[2] => value
-  # parts[3] => might be empty if line ends with '|'
+  # Remove leading '|' and trailing '|', if any
+  local_line="$(echo "$raw_line" | sed 's/^|//;s/|$//')"
+  # Now we have something like: " target     |  45%      "
 
-  # Trim key and value
-  local_key="$(echo "${parts[1]:-}" | trim)"
-  local_val="$(echo "${parts[2]:-}" | trim)"
+  # Split on '|'
+  IFS='|' read -r raw_key raw_val <<< "$local_line"
 
-  # If we read a "target" row
-  if [[ "$local_key" == "$TARGET_KEY" ]]; then
-    # Validate the percentage
-    valid_percentage="$(validate_percentage "$local_val")"
+  # Trim them
+  key="$(echo "${raw_key:-}" | trim)"
+  val="$(echo "${raw_val:-}" | trim)"
+
+  # If we read a "target" row, parse the percentage
+  if [[ "$key" == "$TARGET_KEY" ]]; then
+    valid_percentage="$(validate_percentage "$val")"
     if [[ -z "$valid_percentage" ]]; then
-      echo "Line $line_number: Skipping invalid percentage value '$local_val'."
-      # clear any pending target
+      echo "Line $line_number: Skipping invalid percentage value '$val'."
       current_target_percentage=""
       continue
     fi
-
-    # Store it so next "goal" row can pair with it
     current_target_percentage="$valid_percentage"
     continue
   fi
 
-  # If we read a "goal" row and we have a pending target
-  if [[ "$local_key" == "$GOAL_KEY" && -n "$current_target_percentage" ]]; then
+  # If we read a "goal" row AND we have a pending target
+  if [[ "$key" == "$GOAL_KEY" && -n "$current_target_percentage" ]]; then
     (( goal_count++ ))
-    # Generate the JSON payload
-    payload=$(printf '{"name":"%s","targetPercentage":%s}' "$local_val" "$current_target_percentage")
 
-    # Post the goal
+    # Escape the description
+    safe_val="$(escape_json_string "$val")"
+    # Build JSON
+    payload=$(printf '{"name":"%s","targetPercentage":%s}' "$safe_val" "$current_target_percentage")
+
     post_goal "$payload"
-    # Reset the stored target
+
+    # Reset target
     current_target_percentage=""
     continue
   fi
 
-  # Otherwise, this row is invalid or out-of-place
-  echo "Line $line_number: Skipping row. Key='$local_key' (expected '$TARGET_KEY' or '$GOAL_KEY'), or no pending target to pair with."
+  # Otherwise, skip it
+  echo "Line $line_number: Skipping row. Key='$key' (expected '$TARGET_KEY' or '$GOAL_KEY'), or no pending target."
 done < "$DATA_FILE"
 
 echo
-echo "Finished processing. Goals posted: $goal_count."
+echo "Finished processing. Goals processed: $goal_count."
