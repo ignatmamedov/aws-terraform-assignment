@@ -1,5 +1,6 @@
 stages:
   - build_and_test
+  - publish
 
 workflow:
   rules:
@@ -55,3 +56,17 @@ frontend_job:
     expire_in: 1 week
     paths:
       - frontend/dist/
+
+publish_backend:
+  stage: publish
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo "$PAT" | docker login "$REGISTRY" -u "$GITLAB_USER_LOGIN" --password-stdin
+  script:
+    - docker build ./backend --file ./backend/Dockerfile --tag "$REGISTRY/$PROJECT_PATH/backend:latest"
+    - docker push "$REGISTRY/$PROJECT_PATH/backend:latest"
+  needs:
+    - backend_job
+
