@@ -63,10 +63,10 @@ publish_backend:
   services:
     - docker:dind
   before_script:
-    - echo "$PAT" | docker login "$REGISTRY" -u "$GITLAB_USER_LOGIN" --password-stdin
+    - echo "$PAT" | docker login "$CI_REGISTRY" -u "$GITLAB_USER_LOGIN" --password-stdin
   script:
-    - docker build ./backend --file ./backend/Dockerfile --tag "$REGISTRY/$PROJECT_PATH/backend:latest"
-    - docker push "$REGISTRY/$PROJECT_PATH/backend:latest"
+    - docker build ./backend --file ./backend/Dockerfile --tag "$CI_REGISTRY/$PROJECT_PATH/backend:latest"
+    - docker push "$CI_REGISTRY/$PROJECT_PATH/backend:latest"
   needs:
     - backend_job
 
