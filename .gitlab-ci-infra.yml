@@ -23,14 +23,13 @@ destroy_infrastructure:
   image:
     name: hashicorp/terraform:light
     entrypoint: [""]
-  before_script:
+  script:
     - apk add --no-cache curl unzip
     - echo "Downloading artifacts from the initial_deploy_infrastructure job..."
     - curl --header "PRIVATE-TOKEN: $PAT" -o artifacts.zip "https://gitlab.com/api/v4/projects/$PROJECT_ID/jobs/artifacts/$CI_DEFAULT_BRANCH/download?job=initial_deploy_infrastructure"
     - unzip -o artifacts.zip -d temp_artifacts
     - echo "Moving terraform.tfstate into the infra directory..."
     - mv temp_artifacts/infra/terraform.tfstate infra/
-  script:
     - echo "Changing directory to infra..."
     - cd infra
     - ls -la
