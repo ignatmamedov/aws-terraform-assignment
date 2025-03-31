@@ -132,8 +132,10 @@ resource "aws_launch_template" "exam_lt" {
     db_port = aws_db_instance.exam_rds.port,
     db_name = var.db_name,
     db_user = var.db_user,
-    db_password = var.db_password
-    container_url = var.container_url
+    db_password = var.db_password,
+    container_url = var.container_url,
+    app_key = var.app_key,
+    app_name = var.app_name
   }))
 }
 
