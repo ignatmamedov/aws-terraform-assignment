@@ -6,7 +6,7 @@ stages:
   - destroy_infrastructure
 
 include:
-  local: './.gitlab-ci-infra.yml'
+  local: '.gitlab-ci-infra.yml'
 
 workflow:
   rules:
