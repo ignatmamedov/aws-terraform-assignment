@@ -10,7 +10,7 @@ initial_deploy_infrastructure:
     - terraform init
     - echo "Applying initial Terraform configuration..."
     - terraform apply -auto-approve
-    - terraform output -raw lb_dns > lb_dns.txt
+    - terraform output lb_dns > lb_dns.txt
   when: manual # run manually when needed
   artifacts:
     paths:
@@ -18,28 +18,18 @@ initial_deploy_infrastructure:
       - infra/lb_dns.txt
 
 
-insert_data:
-  stage: seed_data
-  image: alpine:latest
-  dependencies:
-    - initial_deploy_infrastructure
-  before_script:
-    - apk add --no-cache bash curl
-    - chmod +x seed-application/add_data.sh
-  script:
-    - export DNS=$(cat infra/lb_dns.txt | tr -d '\n')
-    - export GOALS_ENDPOINT="http://${DNS}/api/goals"
-    - echo "Using GOALS_ENDPOINT=$GOALS_ENDPOINT"
-    - ./seed-application/add_data.sh seed-application/data.md
-  when: manual
-
 destroy_infrastructure:
   stage: destroy_infrastructure
   image:
     name: hashicorp/terraform:light
     entrypoint: [""]
-  dependencies:
-    - initial_deploy_infrastructure
+  before_script:
+    - apk add --no-cache curl unzip
+    - echo "Downloading artifacts from the initial_deploy_infrastructure job..."
+    - curl --header "PRIVATE-TOKEN: $PAT" -o artifacts.zip "https://gitlab.com/api/v4/projects/$PROJECT_ID/jobs/artifacts/$CI_DEFAULT_BRANCH/download?job=initial_deploy_infrastructure"
+    - unzip -o artifacts.zip -d temp_artifacts
+    - echo "Moving terraform.tfstate into the infra directory..."
+    - mv temp_artifacts/infra/terraform.tfstate infra/
   script:
     - echo "Changing directory to infra..."
     - cd infra
