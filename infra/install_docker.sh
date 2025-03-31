@@ -13,5 +13,5 @@ docker run -d \
   -e DB_DATABASE=${db_name} \
   -e DB_USERNAME=${db_user} \
   -e DB_PASSWORD=${db_password} \
-  -p 80:8000 \
-  registry.gitlab.com/saxionnl/hbo-ict/2.2-project-client-on-board/or1on/or1on-server:latest
+  -p 80:80 \
+  ${container_url}
