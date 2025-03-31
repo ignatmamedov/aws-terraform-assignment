@@ -10,26 +10,28 @@ initial_deploy_infrastructure:
     - terraform init
     - echo "Applying initial Terraform configuration..."
     - terraform apply -auto-approve
+    - echo "Exporting lb_dns output..."
     - terraform output lb_dns > lb_dns.txt
-  when: manual # run manually when needed
+  when: manual  # Run manually when needed
   artifacts:
     paths:
       - infra/terraform.tfstate
       - infra/lb_dns.txt
-
+    expire_in: 1 hour
 
 destroy_infrastructure:
   stage: destroy_infrastructure
   image:
     name: hashicorp/terraform:light
     entrypoint: [""]
-  script:
+  before_script:
     - apk add --no-cache curl unzip
-    - echo "Downloading artifacts from the initial_deploy_infrastructure job..."
-    - curl --header "PRIVATE-TOKEN: $PAT" -o artifacts.zip "https://gitlab.com/api/v4/projects/$PROJECT_ID/jobs/artifacts/$CI_DEFAULT_BRANCH/download?job=initial_deploy_infrastructure"
+    - echo "Downloading artifacts from the initial_deploy_infrastructure job on branch $CI_COMMIT_REF_NAME..."
+    - curl --header "PRIVATE-TOKEN: $PAT" -o artifacts.zip "https://gitlab.com/api/v4/projects/$PROJECT_ID/jobs/artifacts/$CI_COMMIT_REF_NAME/download?job=initial_deploy_infrastructure"
     - unzip -o artifacts.zip -d temp_artifacts
     - echo "Moving terraform.tfstate into the infra directory..."
     - mv temp_artifacts/infra/terraform.tfstate infra/
+  script:
     - echo "Changing directory to infra..."
     - cd infra
     - ls -la
