@@ -3,6 +3,10 @@ stages:
   - initial_deploy
   - deploy_infrastructure
   - publish
+  - destroy_infrastructure
+
+include:
+  local: './.gitlab-ci-infra.yml'
 
 workflow:
   rules:
@@ -82,24 +86,6 @@ publish_frontend:
   needs:
     - frontend_job
 
-initial_deploy_infrastructure:
-  stage: initial_deploy
-  image:
-    name: hashicorp/terraform:light
-    entrypoint: [""]
-  script:
-    - echo "Changing directory to infrastructure..."
-    - cd infra
-    - echo "Initializing Terraform with remote backend..."
-    - terraform init
-    - echo "Applying initial Terraform configuration..."
-    - terraform apply -auto-approve
-    - terraform output lb_dns > lb_dns.txt
-  when: manual # run manually when needed
-  artifacts:
-    paths:
-      - infra/terraform.tfstate
-      - infra/lb_dns.txt
 
 
 
