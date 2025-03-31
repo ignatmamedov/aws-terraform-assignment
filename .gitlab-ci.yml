@@ -92,7 +92,13 @@ deploy_infrastructure:
     - echo "Initializing Terraform..."
     - terraform init
     - echo "Applying Terraform configuration..."
-    - terraform apply -auto-approve
+    - |
+      if terraform apply -auto-approve; then
+        echo "Terraform apply succeeded."
+      else
+        echo "Terraform apply failed, running terraform upgrade..."
+        terraform upgrade
+      fi
     - echo "Extracting load balancer DNS..."
     - terraform output lb_dns > lb_dns.txt
     - echo "Load Balancer DNS:"
