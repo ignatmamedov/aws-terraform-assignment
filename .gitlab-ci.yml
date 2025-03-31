@@ -17,8 +17,8 @@ workflow:
 
 backend_job:
   stage: build_and_test
-  # Provides PHP 8.2 and Composer 
-  image: cimg/php:8.2  
+  # Provides PHP 8.2 and Composer
+  image: cimg/php:8.2
   cache:
     key: backend-deps
     paths:
@@ -35,7 +35,7 @@ backend_job:
     - echo "Running tests..."
     # if artisan not avaibale, run tests manually
     - if [ -f artisan ]; then php artisan test; else vendor/bin/phpunit; fi
-    
+
 frontend_job:
   stage: build_and_test
   image: node:latest
@@ -70,3 +70,12 @@ publish_backend:
   needs:
     - backend_job
 
+publish_frontend:
+  stage: publish
+  image: python:3.10
+  before_script:
+    - pip install boto3
+  script:
+    - python infra/upload_s3.py frontend/dist/
+  needs:
+    - frontend_job
