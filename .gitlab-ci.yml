@@ -1,5 +1,6 @@
 stages:
   - build_and_test
+  - publish
 
 workflow:
   rules:
@@ -55,3 +56,17 @@ frontend_job:
     expire_in: 1 week
     paths:
       - frontend/dist/
+
+publish_backend:
+  stage: publish
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker login $REGISTRY -u "$DEPLOY_USERNAME" -p "$DEPLOY_PASSWORD"
+  script:
+    - docker build ./backend --file ./backend/Dockerfile --tag "$CI_REGISTRY_IMAGE/backend:latest"
+    - docker push "$CI_REGISTRY_IMAGE/backend:latest"
+  needs:
+    - backend_job
+
