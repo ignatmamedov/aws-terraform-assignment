@@ -1,0 +1,32 @@
+initial_deploy_infrastructure:
+  stage: initial_deploy
+  image:
+    name: hashicorp/terraform:light
+    entrypoint: [""]
+  script:
+    - echo "Changing directory to infrastructure..."
+    - cd infra
+    - echo "Initializing Terraform with remote backend..."
+    - terraform init
+    - echo "Applying initial Terraform configuration..."
+    - terraform apply -auto-approve
+    - terraform output lb_dns > lb_dns.txt
+  when: manual # run manually when needed
+  artifacts:
+    paths:
+      - infra/terraform.tfstate
+      - infra/lb_dns.txt
+
+destroy_infrastructure:
+  stage: destroy_infrastructure
+  image:
+    name: hashicorp/terraform:light
+    entrypoint: [""]
+  script:
+    - echo "Changing directory to infra..."
+    - cd infra
+    - echo "Initializing Terraform..."
+    - terraform init
+    - echo "Destroying Terraform configuration..."
+    - terraform destroy -auto-approve
+  when: manual

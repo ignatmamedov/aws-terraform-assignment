@@ -200,3 +200,8 @@ resource "aws_lb_listener" "exam_listener" {
     target_group_arn = aws_lb_target_group.exam_tg.arn
   }
 }
+
+# output lb dns
+output "lb_dns" {
+  value = aws_lb.exam_alb.dns_name
+}

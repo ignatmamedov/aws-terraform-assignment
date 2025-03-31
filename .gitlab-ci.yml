@@ -1,6 +1,12 @@
 stages:
   - build_and_test
+  - deploy_infrastructure
   - publish
+  - initial_deploy
+  - destroy_infrastructure
+
+include:
+  local: '.gitlab-ci-infra.yml'
 
 workflow:
   rules:
@@ -79,3 +85,7 @@ publish_frontend:
     - python infra/upload_s3.py frontend/dist/
   needs:
     - frontend_job
+
+
+
+
