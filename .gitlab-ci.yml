@@ -1,5 +1,6 @@
 stages:
   - build_and_test
+  - initial_deploy
   - deploy_infrastructure
   - publish
 
@@ -81,37 +82,24 @@ publish_frontend:
   needs:
     - frontend_job
 
-deploy_infrastructure:
-  stage: deploy_infrastructure
+initial_deploy_infrastructure:
+  stage: initial_deploy
   image:
     name: hashicorp/terraform:light
     entrypoint: [""]
   script:
     - echo "Changing directory to infrastructure..."
     - cd infra
-    - echo "Initializing Terraform..."
+    - echo "Initializing Terraform with remote backend..."
     - terraform init
-    - echo "Applying Terraform configuration..."
-    - |
-      if terraform apply -auto-approve; then
-        echo "Terraform apply succeeded."
-      else
-        echo "Terraform apply failed. Reinitializing with upgrade..."
-        terraform init -upgrade
-        if terraform apply -auto-approve; then
-          echo "Terraform apply succeeded after upgrade."
-        else
-          echo "Terraform apply still failed after upgrade. Exiting with error."
-          exit 1
-        fi
-      fi
-    - echo "Extracting load balancer DNS..."
+    - echo "Applying initial Terraform configuration..."
+    - terraform apply -auto-approve
     - terraform output lb_dns > lb_dns.txt
-    - echo "Load Balancer DNS:"
-    - cat lb_dns.txt
+  when: manual # run manually when needed
   artifacts:
     paths:
+      - infra/terraform.tfstate
       - infra/lb_dns.txt
-    expire_in: 1 hour
-  needs:
-    - backend_job
+
+
+
