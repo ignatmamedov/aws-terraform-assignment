@@ -83,7 +83,9 @@ publish_frontend:
 
 deploy_infrastructure:
   stage: deploy_infrastructure
-  image: hashicorp/terraform:latest
+  image:
+    name: hashicorp/terraform:light
+    entrypoint: [""]
   script:
     - echo "Changing directory to infrastructure..."
     - cd infra
