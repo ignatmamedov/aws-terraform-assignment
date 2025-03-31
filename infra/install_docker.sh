@@ -13,5 +13,8 @@ docker run -d \
   -e DB_DATABASE=${db_name} \
   -e DB_USERNAME=${db_user} \
   -e DB_PASSWORD=${db_password} \
+  -e APP_DEBUG=true \
+  -e APP_KEY=${app_key} \
+  -e APP_NAME=${app_name} \
   -p 80:80 \
   ${container_url}

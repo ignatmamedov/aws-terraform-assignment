@@ -4,6 +4,7 @@ stages:
   - publish
   - initial_deploy
   - destroy_infrastructure
+  - seed_data
 
 include:
   local: '.gitlab-ci-infra.yml'

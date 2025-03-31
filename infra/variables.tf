@@ -77,3 +77,11 @@ variable "dt_password" {
 variable "container_url" {
   default = "registry.gitlab.com/saxionnl/hbo-ict/2.3-devops/2024-2025/exam-regular/15/backend:latest"
 }
+
+variable "app_key" {
+  default = "base64:yqgFFzksV+C09W0+m69EFIaQOApHZ0knT6+kNZiidsE="
+}
+
+variable "app_name" {
+  default = "thermometer"
+}
