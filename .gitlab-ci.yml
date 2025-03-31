@@ -1,5 +1,6 @@
 stages:
   - build_and_test
+  - deploy_infrastructure
   - publish
 
 workflow:
@@ -79,3 +80,24 @@ publish_frontend:
     - python infra/upload_s3.py frontend/dist/
   needs:
     - frontend_job
+
+deploy_infrastructure:
+  stage: deploy_infrastructure
+  image: hashicorp/terraform:light
+  script:
+    - echo "Changing directory to infrastructure..."
+    - cd infra
+    - echo "Initializing Terraform..."
+    - terraform init
+    - echo "Applying Terraform configuration..."
+    - terraform apply -auto-approve
+    - echo "Extracting load balancer DNS..."
+    - terraform output lb_dns > lb_dns.txt
+    - echo "Load Balancer DNS:"
+    - cat lb_dns.txt
+  artifacts:
+    paths:
+      - infra/lb_dns.txt
+    expire_in: 1 hour
+  needs:
+    - backend_job
