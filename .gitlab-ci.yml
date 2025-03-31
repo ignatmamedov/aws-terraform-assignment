@@ -1,8 +1,8 @@
 stages:
   - build_and_test
-  - initial_deploy
   - deploy_infrastructure
   - publish
+  - initial_deploy
   - destroy_infrastructure
 
 include:
