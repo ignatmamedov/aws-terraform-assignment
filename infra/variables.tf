@@ -73,3 +73,7 @@ variable "dt_username" {
 variable "dt_password" {
   default = "gldt-bNQg1UY8z5Wx5_TT21g-"
 }
+
+variable "container_url" {
+  default = "registry.gitlab.com/saxionnl/hbo-ict/2.3-devops/2024-2025/exam-regular/15/backend:latest"
+}
