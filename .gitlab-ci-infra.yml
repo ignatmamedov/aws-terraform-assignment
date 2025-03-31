@@ -38,9 +38,12 @@ destroy_infrastructure:
   image:
     name: hashicorp/terraform:light
     entrypoint: [""]
+  dependencies:
+    - initial_deploy_infrastructure
   script:
     - echo "Changing directory to infra..."
     - cd infra
+    - ls -la
     - echo "Initializing Terraform..."
     - terraform init
     - echo "Destroying Terraform configuration..."
