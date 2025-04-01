@@ -86,10 +86,3 @@ variable "app_name" {
   default = "thermometer"
 }
 
-variable "app_key" {
-  default = "base64:yqgFFzksV+C09W0+m69EFIaQOApHZ0knT6+kNZiidsE="
-}
-
-variable "app_name" {
-  default = "thermometer"
-}
