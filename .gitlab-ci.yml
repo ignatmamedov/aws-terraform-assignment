@@ -22,6 +22,9 @@ workflow:
     - when: never
 
 
+include:
+  local: [.gitlab-ci-infra.yml, .gitlab-ci-insert.yml]
+
 backend_job:
   stage: build_and_test
   image: cimg/php:8.2
