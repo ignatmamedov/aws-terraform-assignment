@@ -22,28 +22,10 @@ initial_deploy_infrastructure:
       - infra/autoscaling_group_name.txt
       - infra/.marker
   artifacts:
-    when: always
     paths:
       - infra/terraform.tfstate
       - infra/lb_dns.txt
-      - infra/autoscaling_group_name.txt
-
-
-
-insert_data:
-  stage: seed_data
-  image: alpine:latest
-  dependencies:
-    - initial_deploy_infrastructure
-  before_script:
-    - apk add --no-cache bash curl
-    - chmod +x seed-application/add_data.sh
-  script:
-    - export DNS=$(cat infra/lb_dns.txt | tr -d '\n')
-    - export GOALS_ENDPOINT="http://${DNS}/api/goals"
-    - echo "Using GOALS_ENDPOINT=$GOALS_ENDPOINT"
-    - ./seed-application/add_data.sh seed-application/data.md
-  when: manual
+    when: always
 
 
 destroy_infrastructure:
