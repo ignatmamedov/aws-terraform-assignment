@@ -4,11 +4,8 @@ initial_deploy_infrastructure:
     name: hashicorp/terraform:light
     entrypoint: [""]
   script:
-    - echo "Changing directory to infrastructure..."
     - cd infra
-    - echo "Initializing Terraform with remote backend..."
     - terraform init
-    - echo "Applying initial Terraform configuration..."
     - terraform apply -auto-approve
     - terraform output -raw lb_dns > lb_dns.txt
     - terraform output -raw autoscaling_group_name > autoscaling_group_name.txt
@@ -55,11 +52,9 @@ destroy_infrastructure:
     paths:
       - infra/terraform.tfstate
   script:
-    - echo "Changing directory to infra..."
     - cd infra
     - ls -la
     - echo "Initializing Terraform..."
     - terraform init
-    - echo "Destroying Terraform configuration..."
     - terraform destroy -auto-approve
   when: manual
