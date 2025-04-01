@@ -145,6 +145,7 @@ resource "aws_autoscaling_group" "exam_asg" {
   min_size = 2
   max_size = 4
   health_check_type  = "EC2"
+  termination_policies = ["OldestInstance"]
   launch_template {
     id = aws_launch_template.exam_lt.id
     version = "$Latest"
@@ -202,8 +203,10 @@ resource "aws_lb_listener" "exam_listener" {
     target_group_arn = aws_lb_target_group.exam_tg.arn
   }
 }
-
-# output lb dns
 output "lb_dns" {
   value = aws_lb.exam_alb.dns_name
+}
+
+output "autoscaling_group_name" {
+  value = aws_autoscaling_group.exam_asg.name
 }
