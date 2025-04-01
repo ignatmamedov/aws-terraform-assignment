@@ -4,7 +4,6 @@ stages:
   - seed_data
   - initial_deploy
   - destroy_infrastructure
-  - seed_data
   - deploy_backend
 
 include:
@@ -21,8 +20,6 @@ workflow:
       when: always
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
       when: always
-    - when: never
-
 
 backend_job:
   stage: build_and_test
