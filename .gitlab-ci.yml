@@ -79,8 +79,7 @@ update_backend:
     - pip install boto3
   script:
     # If no marker => no infra => skip
-    - |
-      if [ ! -f infra/.marker ]; then
+    - if [ ! -f infra/.marker ]; then
         echo "No .marker found. Infrastructure not deployed. Skipping update."
         exit 0
       fi
