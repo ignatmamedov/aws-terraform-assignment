@@ -11,16 +11,20 @@ initial_deploy_infrastructure:
     - echo "Applying initial Terraform configuration..."
     - terraform apply -auto-approve
     - terraform output -raw lb_dns > lb_dns.txt
+    - terraform output -raw autoscaling_group_name > autoscaling_group_name.txt
   when: manual # run manually when needed.
   cache:
     key: terraform-cache
     policy: push
     paths:
       - infra/terraform.tfstate
+      - infra/autoscaling_group_name.txt
   artifacts:
+    when: always
     paths:
       - infra/terraform.tfstate
       - infra/lb_dns.txt
+      - infra/autoscaling_group_name.txt
 
 
 
