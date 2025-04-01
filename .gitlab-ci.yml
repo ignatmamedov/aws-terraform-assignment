@@ -2,8 +2,8 @@ stages:
   - build_and_test
   - publish_backend
   - initial_deploy
-  - seed_data
   - deploy_backend
+  - seed_data
   - build_frontend
   - publish_frontend
   - destroy_infrastructure
