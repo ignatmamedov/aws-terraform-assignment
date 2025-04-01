@@ -91,9 +91,9 @@ build_frontend_for_deploy:
   stage: build_frontend
   image: node:latest
   cache:
-    key: frontend-deps-prod
+    key: terraform-cache
     paths:
-      - frontend/node_modules/
+      - infra/.marker
   dependencies:
     - initial_deploy_infrastructure
   before_script:
@@ -116,6 +116,10 @@ build_frontend_for_deploy:
 publish_frontend:
   stage: publish_frontend
   image: python:3.10
+  cache:
+    key: terraform-cache
+    paths:
+      - infra/.marker
   before_script:
     - pip install boto3
   script:
