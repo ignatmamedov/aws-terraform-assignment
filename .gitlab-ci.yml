@@ -7,7 +7,8 @@ stages:
   - deploy_backend
 
 include:
-  local: '.gitlab-ci-infra.yml'
+  - local: '.gitlab-ci-infra.yml'
+  - local: '.gitlab-ci-insert.yml'
 
 workflow:
   rules:
@@ -21,10 +22,6 @@ workflow:
       when: always
     - when: never
 
-
-include:
-  - local: '.gitlab-ci-infra.yml'
-  - local: '.gitlab-ci-insert.yml'
 
 backend_job:
   stage: build_and_test
