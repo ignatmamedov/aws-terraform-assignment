@@ -37,7 +37,6 @@ backend_job:
     - php artisan migrate --force
   script:
     - php artisan test || vendor/bin/phpunit
-
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: always
@@ -61,10 +60,7 @@ publish_backend:
   needs:
     - backend_job
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: always
-    - if: '$CI_COMMIT_BRANCH == "develop"'
-      when: always
+    - when: always
 
 update_backend:
   stage: deploy_backend
@@ -77,14 +73,17 @@ update_backend:
   before_script:
     - pip install boto3
   script:
-    - if [ ! -f infra/.marker ]; then
-      echo "No .marker => No infra => skipping";
-      exit 0;
+    - |
+      if [ ! -f infra/.marker ]; then
+        echo "No .marker => No infra deployed. Skipping update_backend.";
+        exit 0;
       fi
-    - export ASG_NAME=$(cat infra/autoscaling_group_name.txt | tr -d '\n')
-    - python infra/update_backend.py "$ASG_NAME"
+      export ASG_NAME=$(cat infra/autoscaling_group_name.txt | tr -d '\n')
+      echo "Deploying update to Auto Scaling Group: $ASG_NAME"
+      python infra/update_backend.py "$ASG_NAME"
   needs:
     - job: publish_backend
+    - job: initial_deploy_infrastructure
       optional: true
   when: always
 
@@ -96,16 +95,14 @@ build_frontend_for_deploy:
     paths:
       - frontend/node_modules/
   dependencies:
-    # We need the lb_dns.txt from the infra job, if it was run at least once
     - initial_deploy_infrastructure
   before_script:
     - cd frontend
     - |
       if [ ! -f ../infra/.marker ]; then
-        echo "No .marker found => No infra => skipping production build"
-        exit 0
+        echo "No .marker found => Infrastructure not deployed. Skipping production frontend build.";
+        exit 0;
       fi
-    # Use the LB DNS for VITE_BACKEND_URL
     - export VITE_BACKEND_URL="$(cat ../infra/lb_dns.txt | tr -d '\n')"
     - echo "Building frontend with VITE_BACKEND_URL=$VITE_BACKEND_URL"
   script:
@@ -122,11 +119,12 @@ publish_frontend:
   before_script:
     - pip install boto3
   script:
-    - if [ ! -f infra/.marker ]; then
-      echo "No .marker => Skipping publish_frontend";
-      exit 0;
+    - |
+      if [ ! -f infra/.marker ]; then
+        echo "No .marker => Skipping publish_frontend";
+        exit 0;
       fi
-    - python infra/upload_s3.py frontend/dist/
+      python infra/upload_s3.py frontend/dist/
   needs:
     - build_frontend_for_deploy
   rules:
@@ -134,6 +132,3 @@ publish_frontend:
       when: always
     - if: '$CI_COMMIT_BRANCH == "develop"'
       when: always
-
-
-
