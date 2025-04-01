@@ -14,6 +14,7 @@ initial_deploy_infrastructure:
   when: manual # run manually when needed.
   cache:
     key: terraform-cache
+    policy: push
     paths:
       - infra/terraform.tfstate
   artifacts:
