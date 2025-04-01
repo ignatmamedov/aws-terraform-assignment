@@ -127,8 +127,4 @@ publish_frontend:
       python infra/upload_s3.py frontend/dist/
   needs:
     - build_frontend_for_deploy
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: always
-    - if: '$CI_COMMIT_BRANCH == "develop"'
-      when: always
+
