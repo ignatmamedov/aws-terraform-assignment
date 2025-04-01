@@ -16,7 +16,6 @@ initial_deploy_infrastructure:
     - terraform output -raw lb_dns > lb_dns.txt
     - terraform output -raw autoscaling_group_name > autoscaling_group_name.txt
     - echo "Marker file created" > .marker
-  when: manual
   cache:
     key: terraform-cache
     policy: push
