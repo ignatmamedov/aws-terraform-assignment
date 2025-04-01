@@ -132,7 +132,6 @@ deploy_infra:
   stage: initial_deploy
   trigger:
     include: '.gitlab-ci-infra.yml'
-    strategy: depend
   when: manual
   rules:
     - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"'
