@@ -5,6 +5,7 @@ stages:
   - initial_deploy
   - destroy_infrastructure
   - seed_data
+  - deploy_backend
 
 include:
   local: '.gitlab-ci-infra.yml'
@@ -87,6 +88,20 @@ publish_frontend:
   needs:
     - frontend_job
 
+update_backend:
+  stage: deploy_backend
+  image: python:3.10
+  cache:
+    key: terraform-cache
+    paths:
+      - infra/autoscaling_group_name.txt
+  before_script:
+    - pip install boto3
+  script:
+    - export ASG_NAME=$(cat infra/autoscaling_group_name.txt | tr -d '\n')
+    - echo "Using Auto Scaling Group=$ASG_NAME"
+    - python infra/update_backend.py "$ASG_NAME"
+  when: manual
 
 
 
