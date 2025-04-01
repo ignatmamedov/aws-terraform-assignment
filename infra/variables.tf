@@ -85,3 +85,4 @@ variable "app_key" {
 variable "app_name" {
   default = "thermometer"
 }
+
