@@ -10,12 +10,28 @@ initial_deploy_infrastructure:
     - terraform init
     - echo "Applying initial Terraform configuration..."
     - terraform apply -auto-approve
-    - terraform output lb_dns > lb_dns.txt
+    - terraform output -raw lb_dns > lb_dns.txt
   when: manual # run manually when needed
   artifacts:
     paths:
       - infra/terraform.tfstate
       - infra/lb_dns.txt
+
+
+insert_data:
+  stage: seed_data
+  image: alpine:latest
+  dependencies:
+    - initial_deploy_infrastructure
+  before_script:
+    - apk add --no-cache bash curl
+    - chmod +x seed-application/add_data.sh
+  script:
+    - export DNS=$(cat infra/lb_dns.txt | tr -d '\n')
+    - export GOALS_ENDPOINT="http://${DNS}/api/goals"
+    - echo "Using GOALS_ENDPOINT=$GOALS_ENDPOINT"
+    - ./seed-application/add_data.sh seed-application/data.md
+  when: manual
 
 destroy_infrastructure:
   stage: destroy_infrastructure

@@ -6,3 +6,9 @@ yarn-error.log
 vendor
 .env
 .DS_Store
+.gitlab-ci.yml
+.env.*
+*.sqlite
+database/*.sqlite
+tests/
+
