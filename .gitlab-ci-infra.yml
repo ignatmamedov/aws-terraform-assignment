@@ -12,10 +12,15 @@ initial_deploy_infrastructure:
     - terraform apply -auto-approve
     - terraform output -raw lb_dns > lb_dns.txt
   when: manual # run manually when needed
+  cache:
+    key: terraform-cache
+    paths:
+      - infra/terraform.tfstate
   artifacts:
     paths:
       - infra/terraform.tfstate
       - infra/lb_dns.txt
+
 
 
 insert_data:
@@ -38,9 +43,16 @@ destroy_infrastructure:
   image:
     name: hashicorp/terraform:light
     entrypoint: [""]
+  dependencies:
+    - initial_deploy_infrastructure
+  cache:
+    key: terraform-cache
+    paths:
+      - infra/terraform.tfstate
   script:
     - echo "Changing directory to infra..."
     - cd infra
+    - ls -la
     - echo "Initializing Terraform..."
     - terraform init
     - echo "Destroying Terraform configuration..."
