@@ -77,14 +77,12 @@ update_backend:
       - infra/.marker
   before_script:
     - pip install boto3
-  script:
-    # If no marker => no infra => skip
-    - if [ ! -f infra/.marker ]; then
+    - |
+      if [ ! -f infra/.marker ]; then
         echo "No .marker found. Infrastructure not deployed. Skipping update."
         exit 0
       fi
     - export ASG_NAME=$(cat infra/autoscaling_group_name.txt)
-    - echo "Auto Scaling Group: $ASG_NAME"
     - python infra/update_backend.py "$ASG_NAME"
   # "when: always" => runs automatically on every pipeline
   when: always
