@@ -3,8 +3,6 @@ initial_deploy_infrastructure:
   image:
     name: hashicorp/terraform:light
     entrypoint: [""]
-  rules:
-    - when: manual
   script:
     - if [ -f infra/.marker ]; then
       echo "Marker exists; skipping deployment";
