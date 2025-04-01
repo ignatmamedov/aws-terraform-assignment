@@ -3,7 +3,11 @@ initial_deploy_infrastructure:
   image:
     name: hashicorp/terraform:light
     entrypoint: [""]
+  rules:
+    - when: manual
   script:
+    # Check for the marker file in the cache directory
+    - if [ -f infra/.marker ]; then echo "Marker exists; skipping deployment"; exit 0; fi
     - cd infra
     - terraform init
     - terraform apply -auto-approve
@@ -16,6 +20,7 @@ initial_deploy_infrastructure:
     paths:
       - infra/terraform.tfstate
       - infra/autoscaling_group_name.txt
+      - infra/.marker
   artifacts:
     when: always
     paths:
@@ -40,6 +45,7 @@ insert_data:
     - ./seed-application/add_data.sh seed-application/data.md
   when: manual
 
+
 destroy_infrastructure:
   stage: destroy_infrastructure
   image:
@@ -53,8 +59,6 @@ destroy_infrastructure:
       - infra/terraform.tfstate
   script:
     - cd infra
-    - ls -la
-    - echo "Initializing Terraform..."
     - terraform init
     - terraform destroy -auto-approve
   when: manual
