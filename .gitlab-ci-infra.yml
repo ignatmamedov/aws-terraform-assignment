@@ -11,7 +11,7 @@ initial_deploy_infrastructure:
     - echo "Applying initial Terraform configuration..."
     - terraform apply -auto-approve
     - terraform output -raw lb_dns > lb_dns.txt
-  when: manual # run manually when needed
+  when: manual # run manually when needed.
   cache:
     key: terraform-cache
     paths:
