@@ -121,10 +121,6 @@ update_backend:
     - python infra/update_backend.py "$ASG_NAME"
   when: manual
 
-
-
-
-
 deploy_infra:
   stage: initial_deploy
   trigger:
