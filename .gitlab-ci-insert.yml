@@ -5,6 +5,10 @@ insert_data:
     - apk add --no-cache bash curl
     - chmod +x seed-application/add_data.sh
   script:
+    - if [ ! -f infra/.marker ]; then
+      echo "No .marker found. Infrastructure not deployed. Exiting.";
+      exit 1;
+      fi
     - export DNS=$(cat infra/lb_dns.txt | tr -d '\n')
     - export GOALS_ENDPOINT="http://${DNS}/api/goals"
     - echo "Inserting data into $GOALS_ENDPOINT"

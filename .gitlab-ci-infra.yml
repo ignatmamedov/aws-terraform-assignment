@@ -6,15 +6,17 @@ initial_deploy_infrastructure:
   rules:
     - when: manual
   script:
-    # Check for the marker file in the cache directory
-    - if [ -f infra/.marker ]; then echo "Marker exists; skipping deployment"; exit 0; fi
+    - if [ -f infra/.marker ]; then
+      echo "Marker exists; skipping deployment";
+      exit 0;
+      fi
     - cd infra
     - terraform init
     - terraform apply -auto-approve
     - terraform output -raw lb_dns > lb_dns.txt
     - terraform output -raw autoscaling_group_name > autoscaling_group_name.txt
     - echo "Marker file created" > .marker
-  when: manual # run manually when needed.
+  when: manual
   cache:
     key: terraform-cache
     policy: push
@@ -26,8 +28,8 @@ initial_deploy_infrastructure:
     paths:
       - infra/terraform.tfstate
       - infra/lb_dns.txt
+      - infra/autoscaling_group_name.txt
     when: always
-
 
 destroy_infrastructure:
   stage: destroy_infrastructure
@@ -40,8 +42,10 @@ destroy_infrastructure:
     key: terraform-cache
     paths:
       - infra/terraform.tfstate
+      - infra/.marker
   script:
     - cd infra
     - terraform init
     - terraform destroy -auto-approve
+    - rm -f .marker
   when: manual

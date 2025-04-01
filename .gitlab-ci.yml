@@ -1,10 +1,12 @@
 stages:
   - build_and_test
-  - publish
-  - seed_data
+  - publish_backend
   - initial_deploy
-  - destroy_infrastructure
+  - seed_data
   - deploy_backend
+  - build_frontend
+  - publish_frontend
+  - destroy_infrastructure
 
 include:
   - local: '.gitlab-ci-infra.yml'
@@ -46,35 +48,8 @@ backend_job:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
       when: always
 
-frontend_job:
-  stage: build_and_test
-  image: node:latest
-  cache:
-    key: frontend-deps
-    paths:
-      - frontend/node_modules/
-  before_script:
-    - cd frontend
-  script:
-    - npm install
-    - npm run build
-  artifacts:
-    paths:
-      - frontend/dist/
-    expire_in: 1 week
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-      when: always
-    - if: '$CI_COMMIT_BRANCH == "develop"'
-      when: always
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
-      when: always
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
-      when: always
-
-
 publish_backend:
-  stage: publish
+  stage: publish_backend
   image: docker:latest
   services:
     - docker:dind
@@ -91,41 +66,78 @@ publish_backend:
     - if: '$CI_COMMIT_BRANCH == "develop"'
       when: always
 
+update_backend:
+  stage: deploy_backend
+  image: python:3.10
+  # So we can read autoscaling_group_name.txt
+  cache:
+    key: terraform-cache
+    paths:
+      - infra/autoscaling_group_name.txt
+      - infra/.marker
+  before_script:
+    - pip install boto3
+  script:
+    # If no marker => no infra => skip
+    - |
+      if [ ! -f infra/.marker ]; then
+        echo "No .marker found. Infrastructure not deployed. Skipping update."
+        exit 0
+      fi
+    - export ASG_NAME=$(cat infra/autoscaling_group_name.txt)
+    - echo "Auto Scaling Group: $ASG_NAME"
+    - python infra/update_backend.py "$ASG_NAME"
+  # "when: always" => runs automatically on every pipeline
+  when: always
+  needs:
+    - publish_backend  # ensure the backend image is already published
+
+build_frontend_for_deploy:
+  stage: build_frontend
+  image: node:latest
+  cache:
+    key: frontend-deps-prod
+    paths:
+      - frontend/node_modules/
+  dependencies:
+    # We need the lb_dns.txt from the infra job, if it was run at least once
+    - initial_deploy_infrastructure
+  before_script:
+    - cd frontend
+    - |
+      if [ ! -f ../infra/.marker ]; then
+        echo "No .marker found => No infra => skipping production build"
+        exit 0
+      fi
+    # Use the LB DNS for VITE_BACKEND_URL
+    - export VITE_BACKEND_URL="$(cat ../infra/lb_dns.txt | tr -d '\n')"
+    - echo "Building frontend with VITE_BACKEND_URL=$VITE_BACKEND_URL"
+  script:
+    - npm install
+    - npm run build
+  artifacts:
+    paths:
+      - frontend/dist/
+    expire_in: 1 week
+
 publish_frontend:
-  stage: publish
+  stage: publish_frontend
   image: python:3.10
   before_script:
     - pip install boto3
   script:
+    - if [ ! -f infra/.marker ]; then
+      echo "No .marker => Skipping publish_frontend";
+      exit 0;
+      fi
     - python infra/upload_s3.py frontend/dist/
   needs:
-    - frontend_job
+    - build_frontend_for_deploy
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
       when: always
     - if: '$CI_COMMIT_BRANCH == "develop"'
       when: always
 
-update_backend:
-  stage: deploy_backend
-  image: python:3.10
-  cache:
-    key: terraform-cache
-    paths:
-      - infra/autoscaling_group_name.txt
-  before_script:
-    - pip install boto3
-  script:
-    - export ASG_NAME=$(cat infra/autoscaling_group_name.txt | tr -d '\n')
-    - echo "Using Auto Scaling Group=$ASG_NAME"
-    - python infra/update_backend.py "$ASG_NAME"
-  when: manual
 
-deploy_infra:
-  stage: initial_deploy
-  trigger:
-    include: '.gitlab-ci-infra.yml'
-  when: manual
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"'
 
