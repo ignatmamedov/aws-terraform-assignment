@@ -1,6 +1,7 @@
 stages:
   - build_and_test
   - publish
+  - seed_data
   - initial_deploy
   - destroy_infrastructure
   - seed_data

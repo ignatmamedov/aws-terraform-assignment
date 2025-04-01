@@ -1,10 +1,3 @@
-stages:
-  - seed_data
-
-workflow:
-  rules:
-    - when: never
-
 insert_data:
   stage: seed_data
   image: alpine:latest
