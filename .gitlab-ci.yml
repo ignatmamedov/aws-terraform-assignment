@@ -100,14 +100,16 @@ build_frontend_for_deploy:
     - cd frontend
     - |
       if [ ! -f ../infra/.marker ]; then
-        echo "No .marker found => Infrastructure not deployed. Skipping production frontend build.";
-        exit 0;
+        echo "No .marker => skipping production frontend build."
+        exit 0
       fi
-    - export VITE_BACKEND_URL="$(cat ../infra/lb_dns.txt | tr -d '\n')"
-    - echo "Building frontend with VITE_BACKEND_URL=$VITE_BACKEND_URL"
+    - export LB_DNS="$(cat ../infra/lb_dns.txt)"
+    # write a brand-new .env.production to override any local one
+    - echo "VITE_BACKEND_URL=http://$LB_DNS" > .env.production
+    - cat .env.production
   script:
     - npm install
-    - npm run build
+    - npm run build --mode production
   artifacts:
     paths:
       - frontend/dist/
