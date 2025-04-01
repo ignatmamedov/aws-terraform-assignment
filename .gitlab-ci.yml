@@ -94,7 +94,7 @@ build_frontend_for_deploy:
     key: terraform-cache
     paths:
       - infra/.marker
-  dependencies:
+  needs:
     - initial_deploy_infrastructure
   before_script:
     - cd frontend
@@ -131,4 +131,5 @@ publish_frontend:
       python infra/upload_s3.py frontend/dist/
   needs:
     - build_frontend_for_deploy
+    - initial_deploy_infrastructure
 
