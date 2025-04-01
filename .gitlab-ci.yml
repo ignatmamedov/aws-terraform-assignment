@@ -84,7 +84,8 @@ update_backend:
     - export ASG_NAME=$(cat infra/autoscaling_group_name.txt | tr -d '\n')
     - python infra/update_backend.py "$ASG_NAME"
   needs:
-    - publish_backend
+    - job: publish_backend
+      optional: true
   when: always
 
 build_frontend_for_deploy:
