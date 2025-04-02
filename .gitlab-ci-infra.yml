@@ -16,7 +16,7 @@ initial_deploy_infrastructure:
     - echo "Marker file created" > .marker
   cache:
     key: terraform-cache
-    policy: push
+    policy: pull-push
     paths:
       - infra/terraform.tfstate
       - infra/autoscaling_group_name.txt
