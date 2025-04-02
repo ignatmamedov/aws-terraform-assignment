@@ -6,7 +6,6 @@ insert_data:
       optional: true
   cache: # Update cache settings
     key: terraform-cache
-    policy: push
     paths:
       - infra/.marker
       - infra/seeded.marker
@@ -30,4 +29,4 @@ insert_data:
     - export GOALS_ENDPOINT="http://${DNS}/api/goals"
     - echo "Inserting data into $GOALS_ENDPOINT"
     - ./seed-application/add_data.sh seed-application/data.md
-    - echo "Seeded data successfully inserted." > infra/seeded.marker
+    - echo "Seeded data successfully inserted." > infra/seeded.marker #
