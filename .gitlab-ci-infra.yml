@@ -4,62 +4,56 @@ initial_deploy_infrastructure:
     name: hashicorp/terraform:light
     entrypoint: [""]
   script:
-    - echo "Changing directory to infrastructure..."
+    - if [ -f infra/.marker ]; then
+      echo "Marker exists; skipping deployment";
+      exit 0;
+      fi
     - cd infra
-    - echo "Initializing Terraform with remote backend..."
     - terraform init
-    - echo "Applying initial Terraform configuration..."
     - terraform apply -auto-approve
     - terraform output -raw lb_dns > lb_dns.txt
     - terraform output -raw autoscaling_group_name > autoscaling_group_name.txt
-  when: manual # run manually when needed.
+    - echo "Marker file created" > .marker
   cache:
     key: terraform-cache
-    policy: push
+    policy: pull-push
     paths:
       - infra/terraform.tfstate
       - infra/autoscaling_group_name.txt
+      - infra/lb_dns.txt
+      - infra/.marker
   artifacts:
-    when: always
     paths:
       - infra/terraform.tfstate
       - infra/lb_dns.txt
       - infra/autoscaling_group_name.txt
-
-
-
-insert_data:
-  stage: seed_data
-  image: alpine:latest
-  dependencies:
-    - initial_deploy_infrastructure
-  before_script:
-    - apk add --no-cache bash curl
-    - chmod +x seed-application/add_data.sh
-  script:
-    - export DNS=$(cat infra/lb_dns.txt | tr -d '\n')
-    - export GOALS_ENDPOINT="http://${DNS}/api/goals"
-    - echo "Using GOALS_ENDPOINT=$GOALS_ENDPOINT"
-    - ./seed-application/add_data.sh seed-application/data.md
-  when: manual
+      - infra/.marker
+    when: always
 
 destroy_infrastructure:
   stage: destroy_infrastructure
   image:
     name: hashicorp/terraform:light
     entrypoint: [""]
-  dependencies:
-    - initial_deploy_infrastructure
+  needs:
+      - job: initial_deploy_infrastructure
+        optional: true
   cache:
     key: terraform-cache
-    paths:
+    paths: # Cache files to be removed
+      - infra/.marker
+      - infra/seeded.marker
       - infra/terraform.tfstate
+      - infra/lb_dns.txt
+      - infra/autoscaling_group_name.txt
   script:
-    - echo "Changing directory to infra..."
     - cd infra
-    - ls -la
-    - echo "Initializing Terraform..."
     - terraform init
-    - echo "Destroying Terraform configuration..."
     - terraform destroy -auto-approve
+    - rm -f .marker
+    - rm -f seeded.marker
+    - rm -f lb_dns.txt
+    - rm -f autoscaling_group_name.txt
+    - rm -f terraform.tfstate
+    - echo "Infrastructure destroyed and marker files removed."
   when: manual
