@@ -34,9 +34,9 @@ destroy_infrastructure:
   image:
     name: hashicorp/terraform:light
     entrypoint: [""]
-  dependencies:
-    - job: initial_deploy_infrastructure
-      optional: true
+  needs:
+      - job: initial_deploy_infrastructure
+        optional: true
   cache:
     key: terraform-cache
     paths:
