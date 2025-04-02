@@ -109,7 +109,7 @@ build_frontend_for_deploy:
     - cat .env.production
   script:
     - npm install
-    - npm run build --mode production
+    - npm run build:prod
   artifacts:
     paths:
       - frontend/dist/
