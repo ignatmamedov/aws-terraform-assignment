@@ -40,20 +40,13 @@ destroy_infrastructure:
         optional: true
   cache:
     key: terraform-cache
-    paths: # Cache files to be removed
-      - infra/.marker
-      - infra/seeded.marker
-      - infra/terraform.tfstate
-      - infra/lb_dns.txt
-      - infra/autoscaling_group_name.txt
+    paths: # Cache files to be removed.
+      - infra/.trash
   script:
     - cd infra
     - terraform init
     - terraform destroy -auto-approve
-    - rm -f .marker
-    - rm -f seeded.marker
-    - rm -f lb_dns.txt
-    - rm -f autoscaling_group_name.txt
-    - rm -f terraform.tfstate
-    - echo "Infrastructure destroyed and marker files removed."
+    - rm -f .marker seeded.marker terraform.tfstate lb_dns.txt autoscaling_group_name.txt
+    - touch .trash
+    - echo "Infrastructure destroyed and cache files cleared."
   when: manual
