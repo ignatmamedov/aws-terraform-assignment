@@ -104,7 +104,7 @@ build_frontend_for_deploy:
         exit 0
       fi
     - export LB_DNS="$(cat ../infra/lb_dns.txt)"
-    # write a brand-new .env.production to override any local one
+    # write a brand-new .env.production to override local one
     - echo "VITE_BACKEND_URL=http://$LB_DNS" > .env.production
     - cat .env.production
   script:
