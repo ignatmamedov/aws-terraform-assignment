@@ -1,8 +1,9 @@
 insert_data:
   stage: seed_data
   image: alpine:latest #
-  dependencies:
-    - initial_deploy_infrastructure
+  needs:
+    - job: initial_deploy_infrastructure
+      optional: true
   cache:
     key: terraform-cache
     policy: pull
