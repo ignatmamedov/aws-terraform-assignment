@@ -46,14 +46,12 @@ destroy_infrastructure:
       - infra/terraform.tfstate
       - infra/lb_dns.txt
       - infra/autoscaling_group_name.txt
+      - infra/.trash
   script:
     - cd infra
     - terraform init
     - terraform destroy -auto-approve
-    - rm -f .marker
-    - rm -f seeded.marker
-    - rm -f lb_dns.txt
-    - rm -f autoscaling_group_name.txt
-    - rm -f terraform.tfstate
-    - echo "Infrastructure destroyed and marker files removed."
+    - rm -f .marker seeded.marker terraform.tfstate lb_dns.txt autoscaling_group_name.txt
+    - touch .trash
+    - echo "Infrastructure destroyed and cache files cleared."
   when: manual
