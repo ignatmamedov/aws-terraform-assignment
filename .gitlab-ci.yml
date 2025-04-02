@@ -10,7 +10,7 @@ stages:
 
 include:
   - local: '.gitlab-ci-infra.yml' #infra
-  - local: '.gitlab-ci-insert.yml' #insert-
+  - local: '.gitlab-ci-insert.yml' #insert
 
 workflow:
   rules:
