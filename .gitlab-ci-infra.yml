@@ -26,6 +26,7 @@ initial_deploy_infrastructure:
       - infra/terraform.tfstate
       - infra/lb_dns.txt
       - infra/autoscaling_group_name.txt
+      - infra/.marker
     when: always
 
 destroy_infrastructure:
@@ -34,7 +35,8 @@ destroy_infrastructure:
     name: hashicorp/terraform:light
     entrypoint: [""]
   dependencies:
-    - initial_deploy_infrastructure
+    - job: initial_deploy_infrastructure
+      optional: true
   cache:
     key: terraform-cache
     paths:
