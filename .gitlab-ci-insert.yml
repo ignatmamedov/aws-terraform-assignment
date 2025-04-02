@@ -1,6 +1,12 @@
 insert_data:
   stage: seed_data
   image: alpine:latest
+  dependencies:
+    - initial_deploy_infrastructure
+  cache:
+    key: terraform-cache
+    paths:
+      - infra/.marker
   before_script:
     - apk add --no-cache bash curl
     - chmod +x seed-application/add_data.sh
