@@ -124,7 +124,7 @@ publish_frontend:
     key: terraform-cache
     policy: pull
     paths:
-      - infra/.marker
+      - infra/.marker #
   before_script:
     - pip install boto3
   script:
