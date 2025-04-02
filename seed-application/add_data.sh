@@ -107,6 +107,26 @@ echo "Using endpoint: $ENDPOINT"
 echo "Reading data from: $DATA_FILE"
 echo
 
+
+echo "Waiting for API to become available at $ENDPOINT..."
+start_time=$(date +%s)
+while true; do
+  current_time=$(date +%s)
+  if (( current_time - start_time > 600 )); then
+    echo "Timeout reached after 10 minutes. API is still not available."
+    exit 1
+  fi
+
+  status_code=$(curl -s -o /dev/null -w "%{http_code}" "$ENDPOINT")
+  if [[ "$status_code" == "200" || "$status_code" == "404" ]]; then
+    echo "API is available (HTTP $status_code). Starting data upload..."
+    break
+  else
+    echo "API not ready yet (HTTP $status_code). Retrying in 5 seconds..."
+    sleep 5
+  fi
+done
+
 current_target_percentage=""
 line_number=0
 goal_count=0
