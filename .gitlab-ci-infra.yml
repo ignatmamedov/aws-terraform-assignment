@@ -20,6 +20,7 @@ initial_deploy_infrastructure:
     paths:
       - infra/terraform.tfstate
       - infra/autoscaling_group_name.txt
+      - infra/lb_dns.txt
       - infra/.marker
   artifacts:
     paths:
@@ -41,7 +42,8 @@ destroy_infrastructure:
     key: terraform-cache
     paths:
       - infra/terraform.tfstate
-      - infra/.marker
+      - infra/autoscaling_group_name.txt
+      - infra/lb_dns.txt
   script:
     - cd infra
     - terraform init

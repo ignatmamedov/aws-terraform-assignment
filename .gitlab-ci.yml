@@ -67,6 +67,7 @@ update_backend:
   image: python:3.10
   cache:
     key: terraform-cache
+    policy: pull
     paths:
       - infra/autoscaling_group_name.txt
       - infra/.marker
@@ -92,6 +93,7 @@ build_frontend_for_deploy:
   image: node:latest
   cache:
     key: terraform-cache
+    policy: pull
     paths:
       - infra/.marker
   needs:
@@ -120,6 +122,7 @@ publish_frontend:
   image: python:3.10
   cache:
     key: terraform-cache
+    policy: pull
     paths:
       - infra/.marker
   before_script:

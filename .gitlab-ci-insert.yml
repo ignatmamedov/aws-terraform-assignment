@@ -5,6 +5,7 @@ insert_data:
     - initial_deploy_infrastructure
   cache:
     key: terraform-cache
+    policy: pull
     paths:
       - infra/.marker
   before_script:
@@ -19,4 +20,3 @@ insert_data:
     - export GOALS_ENDPOINT="http://${DNS}/api/goals"
     - echo "Inserting data into $GOALS_ENDPOINT"
     - ./seed-application/add_data.sh seed-application/data.md
-  when: manual
