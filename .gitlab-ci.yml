@@ -9,8 +9,8 @@ stages:
   - destroy_infrastructure
 
 include:
-  - local: '.gitlab-ci-infra.yml'
-  - local: '.gitlab-ci-insert.yml'
+  - local: '.gitlab-ci-infra.yml' #infra
+  - local: '.gitlab-ci-insert.yml' #insert
 
 workflow:
   rules:
