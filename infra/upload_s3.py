@@ -23,6 +23,7 @@ if region != "us-east-1":
         "LocationConstraint": region
     }
 
+
 def configure_bucket(bucket_name):
     s3.put_bucket_website(
         Bucket=bucket_name,
@@ -79,6 +80,7 @@ def upload_to_s3(local_folder, bucket_name):
     website_url = f"http://{bucket_name}.s3-website-{region}.amazonaws.com"
     print(f"\nWebsite URL:\n{website_url}")
 
+
 def empty_bucket(bucket_name):
     try:
         response = s3.list_objects_v2(Bucket=bucket_name)
@@ -88,6 +90,7 @@ def empty_bucket(bucket_name):
                 s3.delete_object(Bucket=bucket_name, Key=obj['Key'])
     except Exception as e:
         print(f"Error while emptying bucket: {e}")
+
 
 try:
     s3.create_bucket(**create_bucket_params)
