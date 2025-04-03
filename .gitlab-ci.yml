@@ -64,9 +64,10 @@ publish_backend:
     - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
       variables:
         TF_VAR_env: "main"
-    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
-      when: always
-    - when: never
+#    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+#      when: always
+#    - when: never
+    - when: always # change to never afterwards
 
 update_backend:
   stage: deploy_backend
@@ -75,24 +76,30 @@ update_backend:
     key: terraform-cache
     policy: pull
     paths:
-      - infra/autoscaling_group_name.txt
-      - infra/.marker
+      - infra/${TF_VAR_env}/autoscaling_group_name.txt
+      - infra/${TF_VAR_env}/.marker
   before_script:
     - pip install boto3
   script:
-    - |
-      if [ ! -f infra/.marker ]; then
-        echo "No .marker => No infra deployed. Skipping update_backend.";
-        exit 0;
-      fi
-      export ASG_NAME=$(cat infra/autoscaling_group_name.txt | tr -d '\n')
-      echo "Deploying update to Auto Scaling Group: $ASG_NAME"
-      python infra/update_backend.py "$ASG_NAME"
+  - |
+    if [ ! -f infra/${TF_VAR_env}/.marker ]; then
+      echo "No .marker => No infra deployed. Skipping update_backend.";
+      exit 0;
+    fi
+    export ASG_NAME=$(cat infra/${TF_VAR_env}/autoscaling_group_name.txt | tr -d '\n')
+    echo "Deploying update to Auto Scaling Group: $ASG_NAME"
+    python infra/update_backend.py "$ASG_NAME"
   needs:
     - job: publish_backend
     - job: initial_deploy_infrastructure
       optional: true
   rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+      variables:
+        TF_VAR_env: "main"
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+      variables:
+        TF_VAR_env: "main"
     - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
       when: always
     - when: never
@@ -104,17 +111,17 @@ build_frontend_for_deploy:
     key: terraform-cache
     policy: pull
     paths:
-      - infra/.marker
+      - infra/${TF_VAR_env}/.marker
   needs:
     - initial_deploy_infrastructure
   before_script:
     - cd frontend
     - |
-      if [ ! -f ../infra/.marker ]; then
+      if [ ! -f ../infra/${TF_VAR_env}/.marker ]; then
         echo "No .marker => skipping production frontend build."
         exit 0
       fi
-    - export LB_DNS="$(cat ../infra/lb_dns.txt)"
+    - export LB_DNS="$(cat ../infra/${TF_VAR_env}/lb_dns.txt)"
     - echo "VITE_BACKEND_URL=http://$LB_DNS" > .env.production
     - cat .env.production
   script:
@@ -143,20 +150,26 @@ publish_frontend:
     key: terraform-cache
     policy: pull
     paths:
-      - infra/.marker
+      - infra/${TF_VAR_env}/.marker
   before_script:
     - pip install boto3
   script:
-    - |
-      if [ ! -f infra/.marker ]; then
-        echo "No .marker => Skipping publish_frontend";
-        exit 0;
-      fi
-      python infra/upload_s3.py frontend/dist/ $TF_VAR_env
+  - |
+    if [ ! -f infra/${TF_VAR_env}/.marker ]; then
+      echo "No .marker => Skipping publish_frontend";
+      exit 0;
+    fi
+    python infra/upload_s3.py frontend/dist/ "$TF_VAR_env"
   needs:
     - build_frontend_for_deploy
     - initial_deploy_infrastructure
   rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+      variables:
+        TF_VAR_env: "main"
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+      variables:
+        TF_VAR_env: "main"
     - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
       when: always
     - when: never
