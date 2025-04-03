@@ -50,27 +50,43 @@ validate_percentage() {
 #   Arg 1: JSON payload string
 post_goal() {
   local payload="$1"
-  local tmpfile
-  tmpfile=$(mktemp)
-
-  # Capture the HTTP status code
+  local max_attempts=10
+  local attempt=0
   local response_code
-  response_code=$(curl -s -o "$tmpfile" -w "%{http_code}" \
-                  -X POST "$ENDPOINT" \
-                  -H "Content-Type: application/json" \
-                  -d "$payload")
-
   local response_body
-  response_body=$(cat "$tmpfile")
-  rm -f "$tmpfile"
 
-  if [[ "$response_code" == "200" || "$response_code" == "201" ]]; then
-    echo "Successfully posted: $payload"
-  else
-    echo "Error posting goal! HTTP $response_code"
-    echo "Response body: $response_body"
-  fi
+  while (( attempt < max_attempts )); do
+    local tmpfile
+    tmpfile=$(mktemp)
+
+    # Capture the HTTP status code
+    response_code=$(curl -s -o "$tmpfile" -w "%{http_code}" \
+                    -X POST "$ENDPOINT" \
+                    -H "Content-Type: application/json" \
+                    -d "$payload")
+
+    response_body=$(cat "$tmpfile")
+    rm -f "$tmpfile"
+
+    if [[ "$response_code" == "200" || "$response_code" == "201" ]]; then
+      echo "Successfully posted: $payload"
+      return 0
+    elif [[ "$response_code" == "500" || "$response_code" == "502" ]]; then
+      attempt=$((attempt+1))
+      echo "Attempt $attempt: Received HTTP $response_code. Retrying in 2000ms..."
+      sleep 2
+    else
+      echo "Error posting goal! HTTP $response_code"
+      echo "Response body: $response_body"
+      return 1
+    fi
+  done
+
+  echo "Error posting goal after $max_attempts attempts. Last response code: $response_code"
+  echo "Response body: $response_body"
+  return 1
 }
+
 
 ################################################################################
 # Main script logic
