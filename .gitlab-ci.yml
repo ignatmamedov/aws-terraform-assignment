@@ -64,10 +64,9 @@ publish_backend:
     - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
       variables:
         TF_VAR_env: "main"
-#    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
-#      when: always
-#    - when: never
-    - when: always # change to never afterwards
+    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+      when: always
+    - when: never
 
 update_backend:
   stage: deploy_backend

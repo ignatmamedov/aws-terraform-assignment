@@ -20,11 +20,11 @@ insert_data:
         if [ ! -f "infra/${TF_VAR_env}/.marker" ]; then
         echo "No .marker found. Infrastructure not deployed. Exiting.";
         exit 1;
-      fi
-      if [ -f "infra/${TF_VAR_env}/seeded.marker" ]; then
-      echo "Seed data already inserted. Exiting.";
-      exit 0;
-      fi
+        fi
+        if [ -f "infra/${TF_VAR_env}/seeded.marker" ]; then
+        echo "Seed data already inserted. Exiting.";
+        exit 0;
+        fi
     - export DNS=$(cat "infra/${TF_VAR_env}/lb_dns.txt" | tr -d '\n')
     - export GOALS_ENDPOINT="http://${DNS}/api/goals"
     - echo "Inserting data into $GOALS_ENDPOINT"
