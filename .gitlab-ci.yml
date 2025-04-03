@@ -36,7 +36,7 @@ backend_job:
     # check whether and where db is created
     - ls -la storage/app/private/
     - ls -la storage/app/public/
-    - DB_FILE=$(find storage/app/private/ -name "*.sqlite" -print -quit)
+    - DB_FILE=$(find . -name "*.sqlite" -print -quit)
     - echo "DB_CONNECTION=sqlite" >> .env
     - echo "DB_DATABASE=$DB_FILE" >> .env
   script:
