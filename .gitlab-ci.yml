@@ -33,9 +33,6 @@ backend_job:
     - sudo apt-get update && sudo apt-get install -y sqlite3
     - composer install
     - php artisan migrate --force
-    # check whether and where db is created
-    - ls -la storage/app/private/
-    - ls -la storage/app/public/
     - DB_FILE=$(find . -name "*.sqlite" -print -quit)
     - echo "DB_CONNECTION=sqlite" >> .env
     - echo "DB_DATABASE=$DB_FILE" >> .env
