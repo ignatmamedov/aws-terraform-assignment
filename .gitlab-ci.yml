@@ -1,0 +1,167 @@
+stages:
+  - build_and_test
+  - publish_backend
+  - initial_deploy
+  - deploy_backend
+  - seed_data
+  - build_frontend
+  - publish_frontend
+  - destroy_infrastructure
+
+
+include:
+  - local: '.gitlab-ci-infra.yml' # infra
+  - local: '.gitlab-ci-insert.yml' # insert
+
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop")'
+      when: always
+
+backend_job:
+  stage: build_and_test
+  image: cimg/php:8.2
+  cache:
+    key: backend-deps
+    paths:
+      - backend/vendor/
+  before_script:
+    - cd backend
+    - sudo apt-get update && sudo apt-get install -y sqlite3
+    - composer install
+    - php artisan migrate --force
+    - DB_FILE=$(find . -name "*.sqlite" -print -quit)
+    - echo "DB_CONNECTION=sqlite" >> .env
+    - echo "DB_DATABASE=$DB_FILE" >> .env
+  script:
+    - php artisan test || vendor/bin/phpunit
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop")'
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"'
+      when: always
+
+publish_backend:
+  stage: publish_backend
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker login $REGISTRY -u "$DEPLOY_USERNAME" -p "$DEPLOY_PASSWORD"
+  script:
+    - |
+      if [[ "$CI_COMMIT_REF_NAME" == "main" ]] || [[ "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" == "main" ]]; then
+        export TF_VAR_env="main"
+      fi
+    - IMAGE_TAG="${TF_VAR_env}"
+    - docker build ./backend --file ./backend/Dockerfile --tag "$CI_REGISTRY_IMAGE/backend:${IMAGE_TAG}"
+    - docker push "$CI_REGISTRY_IMAGE/backend:${IMAGE_TAG}"
+  needs:
+    - backend_job
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+      when: always
+    - when: never
+
+update_backend:
+  stage: deploy_backend
+  image: python:3.10
+  cache:
+    key: terraform-cache
+    policy: pull
+    paths:
+      - infra/${TF_VAR_env}/autoscaling_group_name.txt
+      - infra/${TF_VAR_env}/.marker
+  before_script:
+    - pip install boto3
+  script:
+  - |
+    if [[ "$CI_COMMIT_REF_NAME" == "main" ]] || [[ "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" == "main" ]]; then
+      export TF_VAR_env="main"
+    fi
+  - |
+    if [ ! -f infra/${TF_VAR_env}/.marker ]; then
+      echo "No .marker => No infra deployed. Skipping update_backend.";
+      exit 0;
+    fi
+    export ASG_NAME=$(cat infra/${TF_VAR_env}/autoscaling_group_name.txt | tr -d '\n')
+    echo "Deploying update to Auto Scaling Group: $ASG_NAME"
+    python infra/update_backend.py "$ASG_NAME"
+  needs:
+    - job: publish_backend
+    - job: initial_deploy_infrastructure
+      optional: true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+      when: always
+    - when: never
+
+build_frontend_for_deploy:
+  stage: build_frontend
+  image: node:latest
+  cache:
+    key: terraform-cache
+    policy: pull
+    paths:
+      - infra/${TF_VAR_env}/lb_dns.txt
+      - infra/${TF_VAR_env}/.marker
+  needs:
+    - initial_deploy_infrastructure
+  before_script:
+    - cd frontend
+    - |
+      if [[ "$CI_COMMIT_REF_NAME" == "main" ]] || [[ "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" == "main" ]]; then
+        export TF_VAR_env="main"
+      fi
+    - |
+      if [ ! -f ../infra/${TF_VAR_env}/.marker ]; then
+        echo "No .marker => skipping production frontend build."
+        exit 0
+      fi
+    - export LB_DNS="$(cat ../infra/${TF_VAR_env}/lb_dns.txt)"
+    - echo "VITE_BACKEND_URL=http://$LB_DNS" > .env.production
+    - cat .env.production
+  script:
+    - npm install
+    - npm run build:prod
+  artifacts:
+    paths:
+      - frontend/dist/
+    expire_in: 1 week
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+      when: always
+    - when: never
+
+publish_frontend:
+  stage: publish_frontend
+  image: python:3.10
+  cache:
+    key: terraform-cache
+    policy: pull
+    paths:
+      - infra/${TF_VAR_env}/.marker
+  before_script:
+    - pip install boto3
+  script:
+  - |
+    if [[ "$CI_COMMIT_REF_NAME" == "main" ]] || [[ "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" == "main" ]]; then
+      export TF_VAR_env="main"
+    fi
+  - |
+    if [ ! -f infra/${TF_VAR_env}/.marker ]; then
+      echo "No .marker => Skipping publish_frontend";
+      exit 0;
+    fi
+    python infra/upload_s3.py frontend/dist/ "$TF_VAR_env"
+  needs:
+    - build_frontend_for_deploy
+    - initial_deploy_infrastructure
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+      when: always
+    - when: never

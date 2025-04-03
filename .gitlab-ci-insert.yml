@@ -1,0 +1,41 @@
+insert_data:
+  stage: seed_data
+  image: alpine:latest #
+  needs:
+    - job: initial_deploy_infrastructure
+      optional: true
+  cache: # Update cache settings
+    key: terraform-cache
+    paths:
+      - infra/${TF_VAR_env}/.marker
+      - infra/${TF_VAR_env}/seeded.marker
+      - infra/${TF_VAR_env}/terraform.tfstate
+      - infra/${TF_VAR_env}/lb_dns.txt
+      - infra/${TF_VAR_env}/autoscaling_group_name.txt
+  before_script:
+    - apk add --no-cache bash curl
+    - chmod +x seed-application/add_data.sh
+  script:
+    - |
+        if [[ "$CI_COMMIT_REF_NAME" == "main" ]] || [[ "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" == "main" ]]; then
+          export TF_VAR_env="main"
+        fi
+    - |
+        if [ ! -f "infra/${TF_VAR_env}/.marker" ]; then
+        echo "No .marker found. Infrastructure not deployed. Exiting.";
+        exit 1;
+        fi
+        if [ -f "infra/${TF_VAR_env}/seeded.marker" ]; then
+        echo "Seed data already inserted. Exiting.";
+        exit 0;
+        fi
+    - export DNS=$(cat "infra/${TF_VAR_env}/lb_dns.txt" | tr -d '\n')
+    - export GOALS_ENDPOINT="http://${DNS}/api/goals"
+    - echo "Inserting data into $GOALS_ENDPOINT"
+    - ./seed-application/add_data.sh seed-application/data.md
+    - echo "Seeded data successfully inserted." > "infra/${TF_VAR_env}/seeded.marker"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+      when: always
+    - when: never
+
