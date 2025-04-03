@@ -49,18 +49,21 @@ publish_backend:
   image: docker:latest
   services:
     - docker:dind
-  variables:
-    CONTAINER_TYPE: "$CI_COMMIT_REF_NAME" #branch-name
-    CONTAINER_VERSION: "$CI_COMMIT_SHORT_SHA" #short commit hash
   before_script:
     - docker login $REGISTRY -u "$DEPLOY_USERNAME" -p "$DEPLOY_PASSWORD"
   script:
-    - IMAGE_TAG="${CONTAINER_TYPE}-${CONTAINER_VERSION}"
+    - IMAGE_TAG="${TF_VAR_env}"
     - docker build ./backend --file ./backend/Dockerfile --tag "$CI_REGISTRY_IMAGE/backend:${IMAGE_TAG}"
     - docker push "$CI_REGISTRY_IMAGE/backend:${IMAGE_TAG}"
   needs:
     - backend_job
   rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+      variables:
+        TF_VAR_env: "main"
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+      variables:
+        TF_VAR_env: "main"
     - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
       when: always
     - when: never
