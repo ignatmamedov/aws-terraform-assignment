@@ -10,6 +10,7 @@ locals {
   launch_template_name = "${var.launch_template_name}-${var.env}-"
   autoscaling_policy_name = "${var.autoscaling_policy_name}-${var.env}"
   load_balancer_tag = "${var.load_balancer_tag}-${var.env}"
+  container_url = "${var.container_url}:${var.env}"
 }
 
 provider "aws" {
@@ -147,7 +148,7 @@ resource "aws_launch_template" "exam_lt" {
     db_name = var.db_name,
     db_user = var.db_user,
     db_password = var.db_password,
-    container_url = var.container_url,
+    container_url = local.container_url,
     app_key = var.app_key,
     app_name = var.app_name
   }))
