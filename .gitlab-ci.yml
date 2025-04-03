@@ -121,9 +121,6 @@ build_frontend_for_deploy:
         echo "No .marker => skipping production frontend build."
         exit 0
       fi
-    - ls ../infra/
-    - ls ../infra/${TF_VAR_env}
-    - cat ../infra/${TF_VAR_env}/lb_dns.txt
     - export LB_DNS="$(cat ../infra/${TF_VAR_env}/lb_dns.txt)"
     - echo "VITE_BACKEND_URL=http://$LB_DNS" > .env.production
     - cat .env.production
