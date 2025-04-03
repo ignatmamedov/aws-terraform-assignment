@@ -46,26 +46,39 @@ However, once we started working on the infrastructure, our pipeline gradually e
 Currently, the pipeline is set up in a way that it can automatically deploy the application to the AWS, both the initial version (building entire infrastructure from scratch) and updated version (only updating backend instances).
 A manual step for destroying application is also present and can be executed regardless of the version of the application.
 
-We have come up with a strategy, that uses cached `.marker` files for logic. Each job uses cache produced by `initial_infrastructure_deploy` stage. We can verify, if `.marker` file is present, and decide if infrastructure should be built from scratch or not.
+We have the following stages in the pipeline:
+- `build_and_test` – tests the backend. 
+- `publish_backend` – publishes the backend image to gitlab container registry. Since we operate in two environments (test and production), we publish the image under two different tags based by current branch.
+- `initial_deploy` – deploys the initial version of the infrastructure. After the infrastructure is deployed, `.marker` file is created in the cache. In future jobs, we can check if this file is present and decide if we need to build the infrastructure from scratch or not.
+- `deploy_backend` – updates the backend instances. This job is executed only if the infrastructure is already deployed. Runs a python script that updates backend.
+- `seed_data` – seeds the database. This job is executed only if the infrastructure is already deployed and database wasn't seeded. Runs a bash script that seeds the database.
+- `build_frontend` – builds the frontend. This job is executed only if the infrastructure is already deployed. It uses the URLs of the backend from the previous job as an artifact.
+- `publish_frontend` – Runs a python script that publishes the frontend to S3 bucket. This job is executed only if the infrastructure is already deployed.
+- `destroy_infrastructure` – destroys the entire infrastructure using saved `terraform.tfstate` file from cache. Then clears the markers and other artifacts from cache. 
 
-Another handy marker is `seeded.marker` which is used to verify if the database should be seeded or not. By using these `marker` tricks, we can ensure the pipeline is fully automated and can be run multiple times without any issues.
-
-Apart from caching, we have heavily utilized artifacts. For example, the `initial_infrastructure_deploy` job produces `.txt` files containing URLs of the backend, needed in subsequent `build_frontend` job. Another artifact is `autoscaling_group_name.txt` used in updating the backend. 
-
-Since we weren't limited in terms of tools, parts of the pipeline are using python scripts. Namely, we have created a script to update backend instances using `boto3` library. It checks the amount of running instances and creates 2x new ones. Old ones are automatically terminated by the autoscaling group due to `OldestInstance` policy
-
-Another python script is publishing new built frontend to S3 bucket. This is done using `boto3` library as well. The script clears the bucket and uploads the new build.
-
-Use of environmental variables is also present throughout the pipeline. Necessary AWS credentials are passed to allow the pipeline to access AWS resources. Our terraform configuration is completely parameterized, allowing us to deploy application to different clouds based on branch name. For example, in our case `main` is the production, whilst `develop` is test environment.
+Alongside caching, we have heavily utilized artifacts. For example, the `initial_infrastructure_deploy` job produces `lb_dns.txt` files containing URLs of the backend, needed in subsequent `build_frontend` job. Another artifact is `autoscaling_group_name.txt` used in updating the backend. 
+Use of environmental variables is also present throughout the pipeline. Necessary AWS credentials are passed to allow the pipeline to access AWS resources. 
+Our terraform configuration is completely parameterized, allowing us to deploy application to different clouds based on branch name. For example, in our case `main` is the production, whilst `develop` is test environment.
 
 
 ## Assignment 4 - Infrastructure as Code
 ### Overview
+In this assignment, we had to set up the infrastructure for the application using Terraform.
+We have started with creating a basic version of the infrastructure, which included a VPC, subnets, security groups and an EC2 instance.
+`variables.tf` file was created to define all the necessary variables for the infrastructure.
+To pass scripts to the EC2 instance, we have created a `install_docker.sh` script that installs latest container of the backend and runs it.
 
 
 ## Assignment 5 - Continuous Deployment
 ### Overview
+As stated above, our pipeline can automatically deploy and subsequently update the application to AWS.
 
+We have come up with a strategy, that uses cached `.marker` files for deployment logic. Each job uses cache produced by `initial_infrastructure_deploy` stage. We can verify, if `.marker` file is present, and decide if infrastructure should be built from scratch or not.
+Another handy marker is `seeded.marker` which is used to verify if the database should be seeded or not. By using these `marker` tricks, we can ensure the pipeline is fully automated and can be run multiple times without any issues.
+
+Since we weren't limited in terms of tools, parts of the pipeline are using python scripts. Namely, we have created a script to update backend instances using `boto3` library. It checks the amount of running instances and creates 2x new ones. Old ones are automatically terminated by the autoscaling group due to `OldestInstance` policy
+
+Another python script is publishing new built frontend to S3 bucket. This is done using `boto3` library as well. The script clears the bucket and uploads the new build.
 
 ## Assignment 7 - Scaling
 ### Overview
