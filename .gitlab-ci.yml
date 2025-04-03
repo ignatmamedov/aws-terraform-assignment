@@ -110,6 +110,7 @@ build_frontend_for_deploy:
     key: terraform-cache
     policy: pull
     paths:
+      - infra/${TF_VAR_env}/lb_dns.txt
       - infra/${TF_VAR_env}/.marker
   needs:
     - initial_deploy_infrastructure
