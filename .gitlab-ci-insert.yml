@@ -30,3 +30,8 @@ insert_data:
     - echo "Inserting data into $GOALS_ENDPOINT"
     - ./seed-application/add_data.sh seed-application/data.md
     - echo "Seeded data successfully inserted." > infra/seeded.marker #
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+      when: always
+    - when: never
+
