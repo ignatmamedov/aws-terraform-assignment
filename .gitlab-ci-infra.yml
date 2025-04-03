@@ -43,9 +43,12 @@ destroy_infrastructure:
     paths: # Cache files to be removed.
       - infra/.trash
   script:
+    - apk add --no-cache python3 py3-pip
+    - pip install boto3
     - cd infra
     - terraform init
     - terraform destroy -auto-approve
+    - python delete_s3_bucket.py
     - rm -f .marker seeded.marker terraform.tfstate lb_dns.txt autoscaling_group_name.txt
     - touch .trash
     - echo "Infrastructure destroyed and cache files cleared."
