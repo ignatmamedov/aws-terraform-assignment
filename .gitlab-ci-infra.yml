@@ -50,9 +50,12 @@ destroy_infrastructure:
     - if: '$CI_COMMIT_REF_NAME == "main"'
       variables:
         TF_VAR_env: "main"
+      when: manual
     - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
       variables:
         TF_VAR_env: "main"
+      when: manual
+    - when: manual
   needs:
       - job: initial_deploy_infrastructure
         optional: true
