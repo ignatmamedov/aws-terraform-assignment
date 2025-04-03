@@ -1,14 +1,4 @@
 #!/usr/bin/env bash
-# Description:
-#  This script reads a Markdown table from the specified file and looks for pairs of rows:
-#    1) A row with key = "target" and a numeric percentage (like "45%").
-#    2) The next row with key = "goal" and a description.
-#  It builds a JSON payload for each valid pair and POSTs it to the configured endpoint.
-#
-# Environment Variables:
-#  - GOALS_ENDPOINT: The URL to POST data to (defaults to "http://localhost:8080/api/goals").
-
-# Attempt to load ../.env, but ignore if missing
 source ../.env 2>/dev/null || true
 
 readonly DEFAULT_ENDPOINT="http://localhost:8080/api/goals"

@@ -29,6 +29,11 @@ initial_deploy_infrastructure:
       - infra/autoscaling_group_name.txt
       - infra/.marker
     when: always
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+      when: always
+    - when: never
+
 
 destroy_infrastructure:
   stage: destroy_infrastructure
