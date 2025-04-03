@@ -3,6 +3,13 @@ initial_deploy_infrastructure:
   image:
     name: hashicorp/terraform:light
     entrypoint: [""]
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+      variables:
+        TF_VAR_env: "main"
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+      variables:
+        TF_VAR_env: "main"
   script:
     - if [ -f infra/.marker ]; then
       echo "Marker exists; skipping deployment";

@@ -1,3 +1,17 @@
+locals {
+  vpc_name = "${var.vpc_name}_${var.env}"
+  internet_gateway_name = "${var.internet_gateway_name}_${var.env}"
+  route_table_name = "${var.route_table_name}_${var.env}"
+  security_group_name = "${var.security_group_prefix}_${var.env}"
+  rds_subnet_group_name = "${var.rds_subnet_group_name}-${var.env}"
+  rds_identifier = "${var.rds_identifier}-${var.env}"
+  alb_name = "${var.alb_name}-${var.env}"
+  target_group_name = "${var.target_group_name}-${var.env}"
+  launch_template_name = "${var.launch_template_name}-${var.env}-"
+  autoscaling_policy_name = "${var.autoscaling_policy_name}-${var.env}"
+  load_balancer_tag = "${var.load_balancer_tag}-${var.env}"
+}
+
 provider "aws" {
   region = var.aws_region
 }
@@ -7,7 +21,7 @@ resource "aws_vpc" "exam_main" {
   instance_tenancy = "default"
 
   tags = {
-    Name = var.vpc_name
+    Name = local.vpc_name
   }
 }
 
@@ -18,7 +32,7 @@ resource "aws_subnet" "exam_subnets" {
   availability_zone = each.value.az
 
   tags = {
-    Name = each.value.name
+    Name = "${each.value.name}_${var.env}"
   }
 }
 
@@ -26,7 +40,7 @@ resource "aws_internet_gateway" "exam_gw" {
   vpc_id = aws_vpc.exam_main.id
 
   tags = {
-    Name = var.internet_gateway_name
+    Name = local.internet_gateway_name
   }
 }
 
@@ -39,7 +53,7 @@ resource "aws_route_table" "exam_route_table" {
   }
 
   tags = {
-    Name = var.route_table_name
+    Name = local.route_table_name
   }
 }
 
@@ -81,21 +95,21 @@ resource "aws_security_group" "exam_sg" {
   }
 
   tags = {
-    Name = var.security_group_name
+    Name = local.security_group_name
   }
 }
 
 resource "aws_db_subnet_group" "exam_rds_subnet_group" {
-  name       = "exam-rds-subnet-group"
+  name       = local.rds_subnet_group_name
   subnet_ids = [for subnet in aws_subnet.exam_subnets : subnet.id]
 
   tags = {
-    Name = "exam-rds-subnet-group"
+    Name = local.rds_subnet_group_name
   }
 }
 
 resource "aws_db_instance" "exam_rds" {
-  identifier = "exam-postgres"
+  identifier = local.rds_identifier
   engine = "postgres"
   engine_version = "17.4"
   instance_class = "db.c6gd.medium"
@@ -110,12 +124,12 @@ resource "aws_db_instance" "exam_rds" {
   skip_final_snapshot = true
 
   tags = {
-    Name = "exam-postgres-db"
+    Name = local.rds_identifier
   }
 }
 
 resource "aws_launch_template" "exam_lt" {
-  name_prefix = "exam-launch-template-"
+  name_prefix = local.launch_template_name
   image_id = var.ec2_ami
   instance_type = var.ec2_instance_type
   key_name = var.ec2_key_pair
@@ -127,7 +141,7 @@ resource "aws_launch_template" "exam_lt" {
 
   user_data = base64encode(templatefile(var.user_data_file, {
     dt_username = var.dt_username,
-    dt_password = var.dt_password
+    dt_password = var.dt_password,
     db_host = aws_db_instance.exam_rds.address,
     db_port = aws_db_instance.exam_rds.port,
     db_name = var.db_name,
@@ -153,7 +167,7 @@ resource "aws_autoscaling_group" "exam_asg" {
 }
 
 resource "aws_autoscaling_policy" "cpu_scaling_policy" {
-  name = "cpu-utilization-policy"
+  name = local.autoscaling_policy_name
   autoscaling_group_name = aws_autoscaling_group.exam_asg.name
   adjustment_type = "ChangeInCapacity"
   scaling_adjustment = 1
@@ -162,19 +176,19 @@ resource "aws_autoscaling_policy" "cpu_scaling_policy" {
 }
 
 resource "aws_lb" "exam_alb" {
-  name = "exam-alb"
+  name = local.alb_name
   internal = false
   load_balancer_type = "application"
   security_groups = [aws_security_group.exam_sg.id]
   subnets = [for subnet in aws_subnet.exam_subnets : subnet.id]
 
   tags = {
-    Name = "exam-load-balancer"
+    Name = local.load_balancer_tag
   }
 }
 
 resource "aws_lb_target_group" "exam_tg" {
-  name = "exam-target-group"
+  name = local.target_group_name
   port = 80
   protocol = "HTTP"
   vpc_id = aws_vpc.exam_main.id
@@ -203,6 +217,7 @@ resource "aws_lb_listener" "exam_listener" {
     target_group_arn = aws_lb_target_group.exam_tg.arn
   }
 }
+
 output "lb_dns" {
   value = aws_lb.exam_alb.dns_name
 }
