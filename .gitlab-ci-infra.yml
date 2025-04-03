@@ -12,8 +12,8 @@ initial_deploy_infrastructure:
     - mkdir -p "${TF_VAR_env}"
     - terraform init
     - terraform apply -auto-approve -state="${TF_VAR_env}/terraform.tfstate"
-    - terraform output -raw lb_dns > "${TF_VAR_env}/lb_dns.txt"
-    - terraform output -raw autoscaling_group_name > "${TF_VAR_env}/autoscaling_group_name.txt"
+    - terraform output -state=${TF_VAR_env}/terraform.tfstate -raw lb_dns > "${TF_VAR_env}/lb_dns.txt"
+    - terraform output -state=${TF_VAR_env}/terraform.tfstate -raw autoscaling_group_name > "${TF_VAR_env}/autoscaling_group_name.txt"
     - echo "Marker file created" > "${TF_VAR_env}/.marker"
   cache:
     key: terraform-cache
