@@ -49,11 +49,15 @@ publish_backend:
   image: docker:latest
   services:
     - docker:dind
+  variables:
+    CONTAINER_TYPE: "$CI_COMMIT_REF_NAME" #branch-name
+    CONTAINER_VERSION: "$CI_COMMIT_SHORT_SHA" #short commit hash
   before_script:
     - docker login $REGISTRY -u "$DEPLOY_USERNAME" -p "$DEPLOY_PASSWORD"
   script:
-    - docker build ./backend --file ./backend/Dockerfile --tag "$CI_REGISTRY_IMAGE/backend:latest"
-    - docker push "$CI_REGISTRY_IMAGE/backend:latest"
+    - IMAGE_TAG="${CONTAINER_TYPE}-${CONTAINER_VERSION}"
+    - docker build ./backend --file ./backend/Dockerfile --tag "$CI_REGISTRY_IMAGE/backend:${IMAGE_TAG}"
+    - docker push "$CI_REGISTRY_IMAGE/backend:${IMAGE_TAG}"
   needs:
     - backend_job
   rules:
