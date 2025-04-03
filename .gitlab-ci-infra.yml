@@ -4,30 +4,31 @@ initial_deploy_infrastructure:
     name: hashicorp/terraform:light
     entrypoint: [""]
   script:
-    - if [ -f infra/.marker ]; then
+    - if [ -f "infra/${TF_VAR_env}/.marker" ]; then
       echo "Marker exists; skipping deployment";
       exit 0;
       fi
     - cd infra
+    - mkdir -p "${TF_VAR_env}"
     - terraform init
-    - terraform apply -auto-approve
-    - terraform output -raw lb_dns > lb_dns.txt
-    - terraform output -raw autoscaling_group_name > autoscaling_group_name.txt
-    - echo "Marker file created" > .marker
+    - terraform apply -auto-approve -state="${TF_VAR_env}/terraform.tfstate"
+    - terraform output -raw lb_dns > "${TF_VAR_env}/lb_dns.txt"
+    - terraform output -raw autoscaling_group_name > "${TF_VAR_env}/autoscaling_group_name.txt"
+    - echo "Marker file created" > "${TF_VAR_env}/.marker"
   cache:
     key: terraform-cache
     policy: pull-push
     paths:
-      - infra/terraform.tfstate
-      - infra/autoscaling_group_name.txt
-      - infra/lb_dns.txt
-      - infra/.marker
+      - infra/${TF_VAR_env}/terraform.tfstate
+      - infra/${TF_VAR_env}/autoscaling_group_name.txt
+      - infra/${TF_VAR_env}/lb_dns.txt
+      - infra/${TF_VAR_env}/.marker
   artifacts:
     paths:
-      - infra/terraform.tfstate
-      - infra/lb_dns.txt
-      - infra/autoscaling_group_name.txt
-      - infra/.marker
+      - infra/${TF_VAR_env}/terraform.tfstate
+      - infra/${TF_VAR_env}/lb_dns.txt
+      - infra/${TF_VAR_env}/autoscaling_group_name.txt
+      - infra/${TF_VAR_env}/.marker
     when: always
   rules:
     - if: '$CI_COMMIT_REF_NAME == "main"'
@@ -68,9 +69,9 @@ destroy_infrastructure:
     - pip install boto3
     - cd infra
     - terraform init
-    - terraform destroy -auto-approve
-    - python delete_s3_bucket.py $TF_VAR_env
-    - rm -f .marker seeded.marker terraform.tfstate lb_dns.txt autoscaling_group_name.txt
+    - terraform destroy -auto-approve -state="${TF_VAR_env}/terraform.tfstate"
+    - python delete_s3_bucket.py "$TF_VAR_env"
+    - rm -f "${TF_VAR_env}/.marker" "${TF_VAR_env}/seeded.marker" "${TF_VAR_env}/terraform.tfstate" "${TF_VAR_env}/lb_dns.txt" "${TF_VAR_env}/autoscaling_group_name.txt"
     - touch .trash
     - echo "Infrastructure destroyed and cache files cleared."
   when: manual
