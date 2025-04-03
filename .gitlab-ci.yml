@@ -122,6 +122,13 @@ build_frontend_for_deploy:
       - frontend/dist/
     expire_in: 1 week
   rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+      variables:
+        TF_VAR_env: "main"
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+      variables:
+        TF_VAR_env: "main"
+
     - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
       when: always
     - when: never
@@ -142,7 +149,7 @@ publish_frontend:
         echo "No .marker => Skipping publish_frontend";
         exit 0;
       fi
-      python infra/upload_s3.py frontend/dist/
+      python infra/upload_s3.py frontend/dist/ $TF_VAR_env
   needs:
     - build_frontend_for_deploy
     - initial_deploy_infrastructure

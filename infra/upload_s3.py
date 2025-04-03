@@ -5,15 +5,15 @@ import uuid
 import json
 import sys
 
-if len(sys.argv) != 2:
-    print("Usage: python upload_to_s3.py <path-to-folder>")
+if len(sys.argv) != 3:
+    print("Usage: python upload_to_s3.py <path-to-folder> <bucket-suffix>")
     sys.exit(1)
 
 local_folder = sys.argv[1]
+bucket_suffix_input = sys.argv[2].lower().strip()
 
 region = boto3.session.Session().region_name or "us-east-1"
-bucket_suffix = str(uuid.uuid4())[:8]
-bucket_name = f"devops-exam-1"
+bucket_name = f"devops-exam-{bucket_suffix_input}"
 
 s3 = boto3.client("s3", region_name=region)
 
