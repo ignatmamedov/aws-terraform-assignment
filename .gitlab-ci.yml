@@ -9,8 +9,8 @@ stages:
   - destroy_infrastructure
 
 include:
-  - local: '.gitlab-ci-infra.yml' #infra
-  - local: '.gitlab-ci-insert.yml' #insert
+  - local: '.gitlab-ci-infra.yml' # infra
+  - local: '.gitlab-ci-insert.yml' # insert
 
 workflow:
   rules:
@@ -18,9 +18,7 @@ workflow:
       when: always
     - if: '$CI_COMMIT_BRANCH == "develop"'
       when: always
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
-      when: always
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop")'
       when: always
 
 backend_job:
@@ -35,16 +33,18 @@ backend_job:
     - sudo apt-get update && sudo apt-get install -y sqlite3
     - composer install
     - php artisan migrate --force
+    # check whether and where db is created
+    - ls -la storage/app/private/
+    - ls -la storage/app/public/
+    - DB_FILE=$(find storage/app/private/ -name "*.sqlite" -print -quit)
+    - echo "DB_CONNECTION=sqlite" >> .env
+    - echo "DB_DATABASE=$DB_FILE" >> .env
   script:
     - php artisan test || vendor/bin/phpunit
   rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop")'
       when: always
-    - if: '$CI_COMMIT_BRANCH == "develop"'
-      when: always
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
-      when: always
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop"'
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"'
       when: always
 
 publish_backend:
@@ -60,7 +60,9 @@ publish_backend:
   needs:
     - backend_job
   rules:
-    - when: always
+    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+      when: always
+    - when: never
 
 update_backend:
   stage: deploy_backend
@@ -86,7 +88,10 @@ update_backend:
     - job: publish_backend
     - job: initial_deploy_infrastructure
       optional: true
-  when: always
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+      when: always
+    - when: never
 
 build_frontend_for_deploy:
   stage: build_frontend
@@ -106,7 +111,6 @@ build_frontend_for_deploy:
         exit 0
       fi
     - export LB_DNS="$(cat ../infra/lb_dns.txt)"
-    # write a brand-new .env.production to override local one
     - echo "VITE_BACKEND_URL=http://$LB_DNS" > .env.production
     - cat .env.production
   script:
@@ -116,6 +120,10 @@ build_frontend_for_deploy:
     paths:
       - frontend/dist/
     expire_in: 1 week
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+      when: always
+    - when: never
 
 publish_frontend:
   stage: publish_frontend
@@ -124,7 +132,7 @@ publish_frontend:
     key: terraform-cache
     policy: pull
     paths:
-      - infra/.marker #
+      - infra/.marker
   before_script:
     - pip install boto3
   script:
@@ -137,4 +145,7 @@ publish_frontend:
   needs:
     - build_frontend_for_deploy
     - initial_deploy_infrastructure
-
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
+      when: always
+    - when: never
