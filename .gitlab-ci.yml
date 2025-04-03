@@ -8,6 +8,7 @@ stages:
   - publish_frontend
   - destroy_infrastructure
 
+
 include:
   - local: '.gitlab-ci-infra.yml' # infra
   - local: '.gitlab-ci-insert.yml' # insert
@@ -52,18 +53,16 @@ publish_backend:
   before_script:
     - docker login $REGISTRY -u "$DEPLOY_USERNAME" -p "$DEPLOY_PASSWORD"
   script:
+    - |
+      if [[ "$CI_COMMIT_REF_NAME" == "main" ]] || [[ "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" == "main" ]]; then
+        export TF_VAR_env="main"
+      fi
     - IMAGE_TAG="${TF_VAR_env}"
     - docker build ./backend --file ./backend/Dockerfile --tag "$CI_REGISTRY_IMAGE/backend:${IMAGE_TAG}"
     - docker push "$CI_REGISTRY_IMAGE/backend:${IMAGE_TAG}"
   needs:
     - backend_job
   rules:
-    - if: '$CI_COMMIT_REF_NAME == "main"'
-      variables:
-        TF_VAR_env: "main"
-    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
-      variables:
-        TF_VAR_env: "main"
     - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
       when: always
     - when: never
@@ -81,6 +80,10 @@ update_backend:
     - pip install boto3
   script:
   - |
+    if [[ "$CI_COMMIT_REF_NAME" == "main" ]] || [[ "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" == "main" ]]; then
+      export TF_VAR_env="main"
+    fi
+  - |
     if [ ! -f infra/${TF_VAR_env}/.marker ]; then
       echo "No .marker => No infra deployed. Skipping update_backend.";
       exit 0;
@@ -93,12 +96,6 @@ update_backend:
     - job: initial_deploy_infrastructure
       optional: true
   rules:
-    - if: '$CI_COMMIT_REF_NAME == "main"'
-      variables:
-        TF_VAR_env: "main"
-    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
-      variables:
-        TF_VAR_env: "main"
     - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
       when: always
     - when: never
@@ -117,6 +114,10 @@ build_frontend_for_deploy:
   before_script:
     - cd frontend
     - |
+      if [[ "$CI_COMMIT_REF_NAME" == "main" ]] || [[ "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" == "main" ]]; then
+        export TF_VAR_env="main"
+      fi
+    - |
       if [ ! -f ../infra/${TF_VAR_env}/.marker ]; then
         echo "No .marker => skipping production frontend build."
         exit 0
@@ -132,13 +133,6 @@ build_frontend_for_deploy:
       - frontend/dist/
     expire_in: 1 week
   rules:
-    - if: '$CI_COMMIT_REF_NAME == "main"'
-      variables:
-        TF_VAR_env: "main"
-    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
-      variables:
-        TF_VAR_env: "main"
-
     - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
       when: always
     - when: never
@@ -155,6 +149,10 @@ publish_frontend:
     - pip install boto3
   script:
   - |
+    if [[ "$CI_COMMIT_REF_NAME" == "main" ]] || [[ "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" == "main" ]]; then
+      export TF_VAR_env="main"
+    fi
+  - |
     if [ ! -f infra/${TF_VAR_env}/.marker ]; then
       echo "No .marker => Skipping publish_frontend";
       exit 0;
@@ -164,12 +162,6 @@ publish_frontend:
     - build_frontend_for_deploy
     - initial_deploy_infrastructure
   rules:
-    - if: '$CI_COMMIT_REF_NAME == "main"'
-      variables:
-        TF_VAR_env: "main"
-    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
-      variables:
-        TF_VAR_env: "main"
     - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
       when: always
     - when: never

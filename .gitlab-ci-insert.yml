@@ -17,6 +17,10 @@ insert_data:
     - chmod +x seed-application/add_data.sh
   script:
     - |
+        if [[ "$CI_COMMIT_REF_NAME" == "main" ]] || [[ "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" == "main" ]]; then
+          export TF_VAR_env="main"
+        fi
+    - |
         if [ ! -f "infra/${TF_VAR_env}/.marker" ]; then
         echo "No .marker found. Infrastructure not deployed. Exiting.";
         exit 1;
@@ -31,12 +35,6 @@ insert_data:
     - ./seed-application/add_data.sh seed-application/data.md
     - echo "Seeded data successfully inserted." > "infra/${TF_VAR_env}/seeded.marker"
   rules:
-    - if: '$CI_COMMIT_REF_NAME == "main"'
-      variables:
-        TF_VAR_env: "main"
-    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
-      variables:
-        TF_VAR_env: "main"
     - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
       when: always
     - when: never
