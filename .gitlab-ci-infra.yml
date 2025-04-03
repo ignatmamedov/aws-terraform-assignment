@@ -3,13 +3,6 @@ initial_deploy_infrastructure:
   image:
     name: hashicorp/terraform:light
     entrypoint: [""]
-  rules:
-    - if: '$CI_COMMIT_REF_NAME == "main"'
-      variables:
-        TF_VAR_env: "main"
-    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
-      variables:
-        TF_VAR_env: "main"
   script:
     - if [ -f infra/.marker ]; then
       echo "Marker exists; skipping deployment";
@@ -37,6 +30,12 @@ initial_deploy_infrastructure:
       - infra/.marker
     when: always
   rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+      variables:
+        TF_VAR_env: "main"
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+      variables:
+        TF_VAR_env: "main"
     - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
       when: always
     - when: never
@@ -47,6 +46,13 @@ destroy_infrastructure:
   image:
     name: hashicorp/terraform:light
     entrypoint: [""]
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'
+      variables:
+        TF_VAR_env: "main"
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+      variables:
+        TF_VAR_env: "main"
   needs:
       - job: initial_deploy_infrastructure
         optional: true
@@ -60,7 +66,7 @@ destroy_infrastructure:
     - cd infra
     - terraform init
     - terraform destroy -auto-approve
-    - python delete_s3_bucket.py
+    - python delete_s3_bucket.py $TF_VAR_env
     - rm -f .marker seeded.marker terraform.tfstate lb_dns.txt autoscaling_group_name.txt
     - touch .trash
     - echo "Infrastructure destroyed and cache files cleared."
