@@ -74,8 +74,8 @@ update_backend:
     key: terraform-cache
     policy: pull
     paths:
-      - infra/${TF_VAR_env}/autoscaling_group_name.txt
-      - infra/${TF_VAR_env}/.marker
+      - infra/main/
+      - infra/develop/
   before_script:
     - pip install boto3
   script:
@@ -107,8 +107,8 @@ build_frontend_for_deploy:
     key: terraform-cache
     policy: pull
     paths:
-      - infra/${TF_VAR_env}/lb_dns.txt
-      - infra/${TF_VAR_env}/.marker
+      - infra/main/
+      - infra/develop/
   needs:
     - initial_deploy_infrastructure
   before_script:
@@ -144,7 +144,8 @@ publish_frontend:
     key: terraform-cache
     policy: pull
     paths:
-      - infra/${TF_VAR_env}/.marker
+      - infra/main/
+      - infra/develop/
   before_script:
     - pip install boto3
   script:

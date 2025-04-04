@@ -23,16 +23,12 @@ initial_deploy_infrastructure:
     key: terraform-cache
     policy: pull-push
     paths:
-      - infra/${TF_VAR_env}/terraform.tfstate
-      - infra/${TF_VAR_env}/autoscaling_group_name.txt
-      - infra/${TF_VAR_env}/lb_dns.txt
-      - infra/${TF_VAR_env}/.marker
+      - infra/main/
+      - infra/develop/
   artifacts:
     paths:
-      - infra/${TF_VAR_env}/terraform.tfstate
-      - infra/${TF_VAR_env}/lb_dns.txt
-      - infra/${TF_VAR_env}/autoscaling_group_name.txt
-      - infra/${TF_VAR_env}/.marker
+      - infra/main/
+      - infra/develop/
     when: always
   rules:
     - if: '$CI_PIPELINE_SOURCE != "merge_request_event"'
@@ -50,8 +46,9 @@ destroy_infrastructure:
         optional: true
   cache:
     key: terraform-cache
-    paths: # Cache files to be removed.
-      - infra/.trash
+    paths:
+      - infra/main/
+      - infra/develop/
   script:
     - |
       if [[ "$CI_COMMIT_REF_NAME" == "main" ]] || [[ "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" == "main" ]]; then
@@ -64,6 +61,6 @@ destroy_infrastructure:
     - terraform destroy -auto-approve -state="${TF_VAR_env}/terraform.tfstate"
     - python delete_s3_bucket.py "$TF_VAR_env"
     - rm -f "${TF_VAR_env}/.marker" "${TF_VAR_env}/seeded.marker" "${TF_VAR_env}/terraform.tfstate" "${TF_VAR_env}/lb_dns.txt" "${TF_VAR_env}/autoscaling_group_name.txt"
-    - touch .trash
+    - touch "${TF_VAR_env}/.trash"
     - echo "Infrastructure destroyed and cache files cleared."
   when: manual
