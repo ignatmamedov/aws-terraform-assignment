@@ -11,14 +11,125 @@ We have decided to use "feature branch" strategy for our workflow. Each feature 
 
 For each feature / fix / improvement, we have created a ticket following naming convention `DEV-<number>`, where `<number>` is the number of the ticket in the issue tracker. That way we can easily link merge requests to tickets in the issue tracker. And branch names are following the same convention.
 
-The same strategy was used for the "Project Client on Board" and turned out to be very useful. 
+The same strategy was used for the "Project Client on Board" and turned out to be very useful.
 
 The branch name convention was set within gitlab. We have also made sure merge is only possible if there was a reviewer other than the author of the Merge Request.
 
 ## Definition of Done
-For each created issue, we have put a bullet-point like description of what needs to be done. 
-Once the issue was completed, we have checked if all the points are done and if the code is working as expected. 
+For each created issue, we have put a bullet-point like description of what needs to be done.
+Once the issue was completed, we have checked if all the points are done and if the code is working as expected.
 If everything is checked and tested, reviewer approves the merge request and issue is closed.
+
+
+## Environment Variables Overview
+---
+## GITLAB Environment Variables
+
+```
+AWS_ACCESS_KEY_ID
+```
+- **Description:** AWS Access Key for authentication with AWS services.
+- **Value:** ``
+
+```
+AWS_SECRET_ACCESS_KEY
+```
+- **Description:** AWS Secret Access Key for secure AWS operations.
+- **Value:** ``
+
+```
+AWS_SESSION_TOKEN
+```
+- **Description:** Temporary session token for AWS.
+- **Value:** ``
+
+```
+DEPLOY_PASSWORD
+```
+- **Description:** Token used for deployment authentication.
+- **Value:** `gldt-XSx56TyNokSey2AyFAo1`
+
+```
+DEPLOY_USERNAME
+```
+- **Description:** Token used for deployment authentication.
+- **Value:** `glpat-sk4f_6M8ctUA3kKWiA-N`
+
+```
+PAT
+```
+- **Description:** Personal Access Token for Git or other version control services.
+- **Value:** `glpat-sk4f_6M8ctUA3kKWiA-N`
+
+```
+PROJECT_ID
+```
+- **Description:** identifier of project.
+- **Value:** `68302463`
+
+```
+REGISTRY
+```
+- **Description:** URL Docker registry to push/pull images.
+- **Value:** `registry.gitlab.com`
+
+---
+## GITLAB TERRAFORM Environment Variables
+
+```
+TF_VAR_app_key
+```
+- **Description:** Application key.
+- **Value:** `base64:yqgFFzksV+C09W0+m69EFIaQOApHZ0knT6+kNZiidsE=`
+
+```
+TF_VAR_container_url
+```
+- **Description:** Fully qualified Docker image URL.
+- **Value:** `registry.gitlab.com/saxionnl/hbo-ict/2.3-devops/2024-2025/exam-regular/15/backend`
+
+```
+TF_VAR_db_name
+```
+- **Description:** Name of the db.
+- **Value:** `postgres`
+
+```
+TF_VAR_db_password
+```
+- **Description:** Database user’s password.
+- **Value:** `88005553535`
+
+```
+TF_VAR_db_user
+```
+- **Description:** Database username.
+- **Value:** `postgres`
+
+```
+TF_VAR_dt_password
+```
+- **Description:** Token for gitlab registry.
+- **Value:** `gldt-bNQg1UY8z5Wx5_TT21g-`
+
+```
+TF_VAR_dt_username
+```
+- **Description:** Token for gitlab registry.
+- **Value:** `gitlab+deploy-token-7711230`
+
+```
+TF_VAR_ec2_key_pair
+```
+- **Description:** Name of the AWS EC2 key pair for SSH access.
+- **Value:** `saxion_imamedov`
+
+```
+TF_VAR_env
+```
+- **Description:** The environment name. Will be used in deployment.
+- **Value:** `develop`
+
 
 ## Assignment 1 - Seeding Script
 
