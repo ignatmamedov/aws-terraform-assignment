@@ -22,6 +22,8 @@ If everything is checked and tested, reviewer approves the merge request and iss
 
 
 ## Environment Variables Overview
+To launch project locally use provided `.env.example` in root directory. Copy it to `.env` and fill in the values.
+
 ---
 ## GITLAB Environment Variables
 
