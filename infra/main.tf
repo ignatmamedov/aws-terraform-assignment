@@ -68,17 +68,10 @@ resource "aws_security_group" "exam_sg" {
   vpc_id = aws_vpc.exam_main.id
 
   ingress {
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
     from_port = 80
     to_port = 80
     protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    security_groups = [aws_security_group.exam_sg.id]
   }
 
   ingress {
@@ -136,7 +129,7 @@ resource "aws_launch_template" "exam_lt" {
   key_name = var.ec2_key_pair
 
   network_interfaces {
-    associate_public_ip_address = true
+    associate_public_ip_address = false
     security_groups = [aws_security_group.exam_sg.id]
   }
 
