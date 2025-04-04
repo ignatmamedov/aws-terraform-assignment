@@ -1,3 +1,25 @@
+# Documentation
+
+## Team
+- 548535 – Ignat Mamedov
+- 544901 – Ilarion Petriv
+
+## Workflow strategy
+
+We have decided to use "feature branch" strategy for our workflow. Each feature was developed in a separate branch, which was then merged into the `develop` branch.
+`main` branch is used for production, while `develop` is used for testing.
+
+For each feature / fix / improvement, we have created a ticket following naming convention `DEV-<number>`, where `<number>` is the number of the ticket in the issue tracker. That way we can easily link merge requests to tickets in the issue tracker. And branch names are following the same convention.
+
+The same strategy was used for the "Project Client on Board" and turned out to be very useful. 
+
+The branch name convention was set within gitlab. We have also made sure merge is only possible if there was a reviewer other than the author of the Merge Request.
+
+## Definition of Done
+For each created issue, we have put a bullet-point like description of what needs to be done. 
+Once the issue was completed, we have checked if all the points are done and if the code is working as expected. 
+If everything is checked and tested, reviewer approves the merge request and issue is closed.
+
 ## Assignment 1 - Seeding Script
 
 ### Overview
