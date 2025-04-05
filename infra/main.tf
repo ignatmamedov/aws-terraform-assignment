@@ -2,7 +2,6 @@ locals {
   vpc_name = "${var.vpc_name}_${var.env}"
   internet_gateway_name = "${var.internet_gateway_name}_${var.env}"
   route_table_name = "${var.route_table_name}_${var.env}"
-  security_group_name = "${var.security_group_prefix}_${var.env}"
   rds_subnet_group_name = "${var.rds_subnet_group_name}-${var.env}"
   rds_identifier = "${var.rds_identifier}-${var.env}"
   alb_name = "${var.alb_name}-${var.env}"
@@ -19,64 +18,91 @@ provider "aws" {
 
 resource "aws_vpc" "exam_main" {
   cidr_block = var.vpc_cidr
-  instance_tenancy = "default"
-
-  tags = {
-    Name = local.vpc_name
-  }
+  tags = { Name = local.vpc_name }
 }
 
-resource "aws_subnet" "exam_subnets" {
-  for_each = var.subnets
+resource "aws_subnet" "private_subnets" {
+  for_each = var.private_subnets
   vpc_id = aws_vpc.exam_main.id
   cidr_block = each.value.cidr
   availability_zone = each.value.az
-
-  tags = {
-    Name = "${each.value.name}_${var.env}"
-  }
+  map_public_ip_on_launch = false
+  tags = { Name = "${each.value.name}-${var.env}" }
 }
 
-resource "aws_internet_gateway" "exam_gw" {
+resource "aws_subnet" "public_subnets" {
+  for_each = var.public_subnets
   vpc_id = aws_vpc.exam_main.id
-
-  tags = {
-    Name = local.internet_gateway_name
-  }
+  cidr_block = each.value.cidr
+  availability_zone = each.value.az
+  map_public_ip_on_launch = true
+  tags = { Name = "${each.value.name}-${var.env}" }
 }
 
-resource "aws_route_table" "exam_route_table" {
+resource "aws_internet_gateway" "gw" {
+  vpc_id = aws_vpc.exam_main.id
+  tags = { Name = local.internet_gateway_name }
+}
+
+resource "aws_route_table" "public_rt" {
   vpc_id = aws_vpc.exam_main.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.exam_gw.id
+    gateway_id = aws_internet_gateway.gw.id
   }
 
-  tags = {
-    Name = local.route_table_name
-  }
+  tags = { Name = "${local.route_table_name}-public" }
 }
 
-resource "aws_route_table_association" "exam_assoc" {
-  for_each = aws_subnet.exam_subnets
+resource "aws_route_table_association" "public_assoc" {
+  for_each = aws_subnet.public_subnets
   subnet_id = each.value.id
-  route_table_id = aws_route_table.exam_route_table.id
+  route_table_id = aws_route_table.public_rt.id
 }
 
-resource "aws_security_group" "exam_sg" {
+resource "aws_eip" "nat" {
+  for_each = var.public_subnets
+  domain = "vpc"
+}
+
+resource "aws_nat_gateway" "nat" {
+  for_each = var.public_subnets
+  allocation_id = aws_eip.nat[each.key].id
+  subnet_id = aws_subnet.public_subnets[each.key].id
+  tags = { Name = "nat-${each.key}-${var.env}" }
+}
+
+resource "aws_route_table" "private_rt" {
+  for_each = var.public_subnets
+  vpc_id = aws_vpc.exam_main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat[each.key].id
+  }
+
+  tags = { Name = "${local.route_table_name}-private-${each.key}" }
+}
+
+resource "aws_route_table_association" "private_assoc" {
+  for_each = var.private_subnets
+  subnet_id = aws_subnet.private_subnets[each.key].id
+  route_table_id = aws_route_table.private_rt[
+  lookup(
+    { for k, v in var.public_subnets : v.az => k },
+    var.private_subnets[each.key].az
+  )
+  ].id
+}
+
+resource "aws_security_group" "alb_sg" {
+  name   = "alb-sg-${var.env}"
   vpc_id = aws_vpc.exam_main.id
 
   ingress {
     from_port = 80
     to_port = 80
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port = 5432
-    to_port = 5432
     protocol = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -87,19 +113,50 @@ resource "aws_security_group" "exam_sg" {
     protocol = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+}
 
-  tags = {
-    Name = local.security_group_name
+resource "aws_security_group" "ec2_sg" {
+  name   = "ec2-sg-${var.env}"
+  vpc_id = aws_vpc.exam_main.id
+
+  ingress {
+    from_port = 80
+    to_port = 80
+    protocol = "tcp"
+    security_groups = [aws_security_group.alb_sg.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group" "rds_sg" {
+  name   = "rds-sg-${var.env}"
+  vpc_id = aws_vpc.exam_main.id
+
+  ingress {
+    from_port = 5432
+    to_port = 5432
+    protocol = "tcp"
+    security_groups = [aws_security_group.ec2_sg.id]
+  }
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
 resource "aws_db_subnet_group" "exam_rds_subnet_group" {
   name       = local.rds_subnet_group_name
-  subnet_ids = [for subnet in aws_subnet.exam_subnets : subnet.id]
-
-  tags = {
-    Name = local.rds_subnet_group_name
-  }
+  subnet_ids = [for s in aws_subnet.private_subnets : s.id]
+  tags = { Name = local.rds_subnet_group_name }
 }
 
 resource "aws_db_instance" "exam_rds" {
@@ -113,13 +170,10 @@ resource "aws_db_instance" "exam_rds" {
   username = var.db_user
   password = var.db_password
   db_subnet_group_name = aws_db_subnet_group.exam_rds_subnet_group.name
-  vpc_security_group_ids = [aws_security_group.exam_sg.id]
+  vpc_security_group_ids = [aws_security_group.rds_sg.id]
   publicly_accessible = false
   skip_final_snapshot = true
-
-  tags = {
-    Name = local.rds_identifier
-  }
+  tags = { Name = local.rds_identifier }
 }
 
 resource "aws_launch_template" "exam_lt" {
@@ -130,10 +184,11 @@ resource "aws_launch_template" "exam_lt" {
 
   network_interfaces {
     associate_public_ip_address = false
-    security_groups = [aws_security_group.exam_sg.id]
+    security_groups = [aws_security_group.ec2_sg.id]
   }
 
   user_data = base64encode(templatefile(var.user_data_file, {
+    ec2_password = var.ec2_password
     dt_username = var.dt_username,
     dt_password = var.dt_password,
     db_host = aws_db_instance.exam_rds.address,
@@ -148,12 +203,13 @@ resource "aws_launch_template" "exam_lt" {
 }
 
 resource "aws_autoscaling_group" "exam_asg" {
-  vpc_zone_identifier = [for subnet in aws_subnet.exam_subnets : subnet.id]
+  vpc_zone_identifier = [for s in aws_subnet.private_subnets : s.id]
   desired_capacity = 2
   min_size = 2
   max_size = 4
-  health_check_type  = "EC2"
+  health_check_type = "EC2"
   termination_policies = ["OldestInstance"]
+
   launch_template {
     id = aws_launch_template.exam_lt.id
     version = "$Latest"
@@ -165,7 +221,7 @@ resource "aws_autoscaling_policy" "cpu_scaling_policy" {
   autoscaling_group_name = aws_autoscaling_group.exam_asg.name
   adjustment_type = "ChangeInCapacity"
   scaling_adjustment = 1
-  cooldown  = 60
+  cooldown = 60
   policy_type = "SimpleScaling"
 }
 
@@ -173,12 +229,14 @@ resource "aws_lb" "exam_alb" {
   name = local.alb_name
   internal = false
   load_balancer_type = "application"
-  security_groups = [aws_security_group.exam_sg.id]
-  subnets = [for subnet in aws_subnet.exam_subnets : subnet.id]
 
-  tags = {
-    Name = local.load_balancer_tag
-  }
+  security_groups = [aws_security_group.alb_sg.id]
+
+  subnets = [
+    for s in aws_subnet.public_subnets : s.id
+  ]
+
+  tags = { Name = local.load_balancer_tag }
 }
 
 resource "aws_lb_target_group" "exam_tg" {
@@ -187,6 +245,7 @@ resource "aws_lb_target_group" "exam_tg" {
   protocol = "HTTP"
   vpc_id = aws_vpc.exam_main.id
   target_type = "instance"
+
   health_check {
     path = "/"
     interval = 30

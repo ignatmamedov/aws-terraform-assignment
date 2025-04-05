@@ -79,6 +79,12 @@ REGISTRY
 ## GITLAB TERRAFORM Environment Variables
 
 ```
+TF_VAR_ec2_password
+```
+- **Description:** Password from EC2.
+- **Value:** `88005553535`
+
+```
 TF_VAR_app_key
 ```
 - **Description:** Application key.
@@ -219,6 +225,7 @@ Our terraform configuration is completely parameterized, allowing us to deploy a
 ## Assignment 4 - Infrastructure as Code
 ### Overview
 ![img.png](img.png)
+
 In this assignment, we had to set up the infrastructure for the application using Terraform.
 We have started with creating a basic version of the infrastructure, which included a VPC, subnets, security groups and an EC2 instance.
 We define a security group that exposes only the ports we need:
