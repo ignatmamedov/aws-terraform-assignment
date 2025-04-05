@@ -1,4 +1,7 @@
 #!/bin/bash
+
+echo "ubuntu:${ec2_password}" | chpasswd
+
 apt-get update
 apt-get install -y docker.io
 systemctl enable docker
