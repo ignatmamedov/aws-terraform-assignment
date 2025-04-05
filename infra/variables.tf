@@ -62,15 +62,27 @@ variable "vpc_name" {
   default = "exam_main_vpc"
 }
 
-variable "subnets" {
+variable "private_subnets" {
   type = map(object({
     cidr = string
     az = string
     name = string
   }))
   default = {
-    subnet_1 = { cidr = "10.0.1.0/24", az = "us-east-1a", name = "exam_subnet_1" }
-    subnet_2 = { cidr = "10.0.2.0/24", az = "us-east-1b", name = "exam_subnet_2" }
+    subnet_1 = { cidr = "10.0.1.0/24", az = "us-east-1a", name = "private-subnet-1" }
+    subnet_2 = { cidr = "10.0.2.0/24", az = "us-east-1b", name = "private-subnet-2" }
+  }
+}
+
+variable "public_subnets" {
+  type = map(object({
+    cidr = string
+    az   = string
+    name = string
+  }))
+  default = {
+    subnet_1 = { cidr = "10.0.3.0/24", az = "us-east-1a", name = "public-subnet-1" }
+    subnet_2 = { cidr = "10.0.4.0/24", az = "us-east-1b", name = "public-subnet-2" }
   }
 }
 
@@ -79,7 +91,7 @@ variable "ec2_ami" {
 }
 
 variable "ec2_instance_type" {
-  default = "t2.micro"
+  default = "t3.micro"
 }
 
 variable "ec2_key_pair" {
@@ -117,6 +129,10 @@ variable "app_key" {
   sensitive = true
 }
 
+variable "ec2_password" {
+  type = string
+  sensitive = true
+}
 variable "env" {
   type = string
 }
